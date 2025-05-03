@@ -2,6 +2,18 @@ mod config;
 
 use tauri_plugin_sql::Migration;
 
+pub struct AppState {}
+impl AppState {
+    fn new() -> Self {
+        AppState {}
+    }
+}
+
+#[tauri::command(async)]
+async fn example_command() {
+    println!("I was invoked from JavaScript!");
+}
+
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
     dotenv::dotenv().ok();
@@ -23,8 +35,12 @@ pub fn run() {
                         .build(),
                 )?;
             }
+
+            app.manage(AppState::new());
+
             Ok(())
         })
+        .invoke_handler(tauri::generate_handler![example_command])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");
 }
