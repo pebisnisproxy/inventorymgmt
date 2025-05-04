@@ -1,7 +1,17 @@
 import {
+  Boxes,
+  Package,
+  PackageOpen,
+  RefreshCw,
+  Search,
+  Undo2
+} from "lucide-react";
+
+import { Button } from "@/components/ui/button";
+import {
   ResizableHandle,
   ResizablePanel,
-  ResizablePanelGroup,
+  ResizablePanelGroup
 } from "@/components/ui/resizable";
 import {
   Select,
@@ -10,46 +20,36 @@ import {
   SelectItem,
   SelectLabel,
   SelectTrigger,
-  SelectValue,
+  SelectValue
 } from "@/components/ui/select";
-import { Button } from "@/components/ui/button";
-import Link from "next/link";
-import {
-  Boxes,
-  ChevronRight,
-  Package,
-  PackageOpen,
-  RefreshCw,
-  Search,
-  Undo2,
-} from "lucide-react";
+
+import { ProductDialog } from "./product-dialog";
 
 const navigations = [
   {
     name: "Stok Produk",
-    href: "/stocks",
     icon: <Boxes />,
-    children: [],
+    children: []
   },
   {
     name: "Produk Masuk",
-    href: "/product/in",
-    icon: <Package />,
+    type: "in",
+    icon: <Package />
   },
   {
     name: "Produk Keluar",
-    href: "/product/out",
-    icon: <PackageOpen />,
+    type: "out",
+    icon: <PackageOpen />
   },
   {
     name: "Produk Return",
-    href: "/product/return",
-    icon: <Undo2 />,
-  },
+    type: "return",
+    icon: <Undo2 />
+  }
 ];
 
 export default function AppDashboard({
-  children,
+  children
 }: {
   children: React.ReactNode;
 }) {
@@ -66,7 +66,7 @@ export default function AppDashboard({
             navigation.children ? (
               <li key={navigation.name}>
                 <Select>
-                  <SelectTrigger className="w-full">
+                  <SelectTrigger className="w-full font-bold">
                     <SelectValue placeholder={navigation.name} />
                   </SelectTrigger>
                   <SelectContent>
@@ -83,18 +83,17 @@ export default function AppDashboard({
               </li>
             ) : (
               <li key={navigation.name}>
-                <Button
-                  className="w-full justify-start"
-                  variant="outline"
-                  asChild
-                >
-                  <Link href={navigation.href} className="w-full">
-                    {navigation.icon}
-                    {navigation.name}
-                  </Link>
-                </Button>
+                <ProductDialog
+                  type={navigation.type as any}
+                  trigger={
+                    <Button className="w-full justify-start" variant="outline">
+                      {navigation.icon}
+                      {navigation.name}
+                    </Button>
+                  }
+                />
               </li>
-            ),
+            )
           )}
         </ul>
       </ResizablePanel>
