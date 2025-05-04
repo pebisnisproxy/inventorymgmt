@@ -6,6 +6,7 @@ import {
   Search,
   Undo2
 } from "lucide-react";
+import Link from "next/link";
 
 import { Button } from "@/components/ui/button";
 import {
@@ -33,16 +34,19 @@ const navigations = [
   },
   {
     name: "Produk Masuk",
+    href: "/p/in",
     type: "in",
     icon: <Package />
   },
   {
     name: "Produk Keluar",
+    href: "/p/out",
     type: "out",
     icon: <PackageOpen />
   },
   {
     name: "Produk Return",
+    href: "/p/return",
     type: "return",
     icon: <Undo2 />
   }
@@ -83,15 +87,16 @@ export default function AppDashboard({
               </li>
             ) : (
               <li key={navigation.name}>
-                <ProductDialog
-                  type={navigation.type as any}
-                  trigger={
-                    <Button className="w-full justify-start" variant="outline">
-                      {navigation.icon}
-                      {navigation.name}
-                    </Button>
-                  }
-                />
+                <Button
+                  className="w-full justify-start"
+                  variant="outline"
+                  asChild
+                >
+                  <Link href={navigation.href}>
+                    {navigation.icon}
+                    {navigation.name}
+                  </Link>
+                </Button>
               </li>
             )
           )}
@@ -100,7 +105,7 @@ export default function AppDashboard({
       <ResizableHandle />
       <ResizablePanel>
         <header className="flex items-center justify-between p-2 border-b">
-          <h1 className="font-bold ml-2">Navigation</h1>
+          <h1 className="font-bold ml-2">{"> ivmv2"}</h1>
           <div className="flex items-center space-x-2">
             <Button variant="outline" size="icon">
               <RefreshCw className="w-4 h-4" />
