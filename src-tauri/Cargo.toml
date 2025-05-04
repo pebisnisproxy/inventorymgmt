@@ -26,3 +26,6 @@ tauri-plugin-log = "2.0.0-rc"
 tauri-plugin-sql = { version = "2", features = ["sqlite"] }
 envy = "0.4.2"
 dotenv = "0.15.0"
+barcoders = { version = "2.0.0", features = ["image", "json"] }
+anyhow = "1.0.98"
+tokio = { version = "1.44.2", features = ["rt-multi-thread", "macros"] }

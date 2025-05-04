@@ -1,17 +1,16 @@
 mod config;
+mod commands;
+pub mod utils;
 
+use tauri::Manager;
 use tauri_plugin_sql::Migration;
 
-pub struct AppState {}
+pub struct AppState;
+
 impl AppState {
     fn new() -> Self {
         AppState {}
     }
-}
-
-#[tauri::command(async)]
-async fn example_command() {
-    println!("I was invoked from JavaScript!");
 }
 
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
@@ -40,7 +39,7 @@ pub fn run() {
 
             Ok(())
         })
-        .invoke_handler(tauri::generate_handler![example_command])
+        .invoke_handler(tauri::generate_handler![commands::generate_barcode])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");
 }
