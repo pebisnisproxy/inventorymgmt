@@ -35,7 +35,7 @@ pub fn run() {
 
     let sql_plugin = tauri_plugin_sql::Builder::new()
         .add_migrations(
-            &cfg.db_path,
+            "sqlite:inventory.db",
             vec![Migration {
                 kind: MigrationKind::Up,
                 description: "Initialize database schema",

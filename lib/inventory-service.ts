@@ -81,13 +81,6 @@ export class InventoryService {
   ): Promise<void> {
     try {
       this.db = await Database.load(dbPath);
-
-      // Load and execute the migration script
-      const migrationScript = await fetch("/assets/db/migrations.sql").then(
-        (res) => res.text()
-      );
-      await this.db.execute(migrationScript);
-
       console.log("Database initialized successfully");
     } catch (error) {
       console.error("Failed to initialize database:", error);

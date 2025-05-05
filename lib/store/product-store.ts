@@ -1,6 +1,8 @@
 import { create } from "zustand";
 
-import { InventoryService, Product } from "../inventory-service";
+import { InventoryManager } from "../inventory-manager";
+import { Product } from "../inventory-service";
+import { InventoryService } from "../inventory-service";
 
 interface ProductState {
   products: Product[];
@@ -27,6 +29,7 @@ export const useProductStore = create<ProductState>(
     fetchProducts: async () => {
       set((state) => ({ ...state, isLoading: true, error: null }));
       try {
+        await InventoryManager.initialize();
         const service = InventoryService.getInstance();
         const products = await service.getAllProducts();
         set((state) => ({ ...state, products, isLoading: false }));
@@ -43,6 +46,7 @@ export const useProductStore = create<ProductState>(
     addProduct: async (product: Omit<Product, "id">) => {
       set((state) => ({ ...state, isLoading: true, error: null }));
       try {
+        await InventoryManager.initialize();
         const service = InventoryService.getInstance();
         await service.createProduct(product);
         await get().fetchProducts();

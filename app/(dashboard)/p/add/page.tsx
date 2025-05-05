@@ -53,20 +53,26 @@ export default function AddProductPage() {
     }
   });
 
-  // Load categories on component mount
   useEffect(() => {
-    const loadCategories = async () => {
-      try {
-        const service = InventoryService.getInstance();
-        const loadedCategories = await service.getAllCategories();
-        setCategories(loadedCategories);
-      } catch (error) {
-        console.error("Failed to load categories:", error);
-        toast.error("Failed to load categories");
-      }
+    const initializeDatabase = async () => {
+      const service = InventoryService.getInstance();
+      await service.initialize();
+      await loadCategories();
     };
-    loadCategories();
+
+    initializeDatabase();
   }, []);
+
+  const loadCategories = async () => {
+    try {
+      const service = InventoryService.getInstance();
+      const loadedCategories = await service.getAllCategories();
+      setCategories(loadedCategories);
+    } catch (error) {
+      console.error("Failed to load categories:", error);
+      toast.error("Failed to load categories");
+    }
+  };
 
   const onSubmit = async (values: ProductFormValues) => {
     try {
@@ -83,10 +89,14 @@ export default function AddProductPage() {
         }
       }
 
-      await addProduct({
+      // Ensure category_id is a number or null
+      const productData = {
         ...values,
-        category_id: categoryId
-      });
+        category_id: categoryId !== null ? Number(categoryId) : null,
+        selling_price: Number(values.selling_price)
+      };
+
+      await addProduct(productData);
       toast.success("Product added successfully");
       router.push("/p");
     } catch (error) {
@@ -163,7 +173,6 @@ export default function AddProductPage() {
                         </SelectTrigger>
                       </FormControl>
                       <SelectContent>
-                        {/* <SelectItem value="">Uncategorized</SelectItem> */}
                         {categories.map(
                           (category) =>
                             category.id && (
