@@ -11,8 +11,9 @@ import {
   Undo2
 } from "lucide-react";
 import Link from "next/link";
-import { useRouter } from "next/navigation";
+import { usePathname, useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
+import { toast } from "sonner";
 
 import { Category, InventoryService, Product } from "@/lib/inventory-service";
 import { cn } from "@/lib/utils";
@@ -67,10 +68,11 @@ export default function AppDashboard({
   children: React.ReactNode;
 }) {
   const router = useRouter();
-  // const pathname = usePathname();
+  const pathname = usePathname();
   const [products, setProducts] = useState<Product[]>([]);
   const [categories, setCategories] = useState<Category[]>([]);
   const [isLoading, setIsLoading] = useState(true);
+  const [isRefreshing, setIsRefreshing] = useState(false);
   const [isMobile, setIsMobile] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [selectedValue, setSelectedValue] = useState<string>("");
@@ -86,44 +88,53 @@ export default function AppDashboard({
     return () => window.removeEventListener("resize", checkMobile);
   }, []);
 
-  useEffect(() => {
-    const loadData = async () => {
+  const loadData = async () => {
+    try {
+      const service = InventoryService.getInstance();
+
+      // Coba inisialisasi database
       try {
-        const service = InventoryService.getInstance();
-
-        // Coba inisialisasi database
-        try {
-          await service.initialize();
-        } catch (initError) {
-          console.error("Gagal menginisialisasi database:", initError);
-          throw new Error("Gagal menginisialisasi database");
-        }
-
-        // Tunggu sebentar untuk memastikan database siap
-        await new Promise((resolve) => setTimeout(resolve, 100));
-
-        const [productsData, categoriesData] = await Promise.all([
-          service.getAllProducts(),
-          service.getAllCategories()
-        ]);
-        setProducts(productsData);
-        setCategories(categoriesData);
-        setError(null);
-      } catch (error) {
-        console.error("Gagal memuat data:", error);
-        setError("Gagal memuat data. Silakan refresh halaman.");
-      } finally {
-        setIsLoading(false);
+        await service.initialize();
+      } catch (initError) {
+        console.error("Gagal menginisialisasi database:", initError);
+        throw new Error("Gagal menginisialisasi database");
       }
-    };
 
+      // Tunggu sebentar untuk memastikan database siap
+      await new Promise((resolve) => setTimeout(resolve, 100));
+
+      const [productsData, categoriesData] = await Promise.all([
+        service.getAllProducts(),
+        service.getAllCategories()
+      ]);
+      setProducts(productsData);
+      setCategories(categoriesData);
+      setError(null);
+    } catch (error) {
+      console.error("Gagal memuat data:", error);
+      setError("Gagal memuat data. Silakan refresh halaman.");
+      toast.error("Gagal memuat data", {
+        description: "Silakan coba lagi atau refresh halaman"
+      });
+    } finally {
+      setIsLoading(false);
+      setIsRefreshing(false);
+    }
+  };
+
+  useEffect(() => {
     loadData();
   }, []);
 
+  const handleRefresh = () => {
+    setIsRefreshing(true);
+    loadData();
+  };
+
   // Reset select value when URL changes
-  // useEffect(() => {
-  //   setSelectedValue("");
-  // }, [pathname]);
+  useEffect(() => {
+    setSelectedValue("");
+  }, [pathname]);
 
   const handleSelect = (value: string) => {
     setSelectedValue(value);
@@ -144,8 +155,15 @@ export default function AppDashboard({
       <div className="flex items-center justify-center h-full">
         <div className="text-center">
           <p className="text-red-500 mb-4">{error}</p>
-          <Button onClick={() => window.location.reload()}>
-            Refresh Halaman
+          <Button onClick={handleRefresh} disabled={isRefreshing}>
+            {isRefreshing ? (
+              <>
+                <RefreshCw className="mr-2 h-4 w-4 animate-spin" />
+                Memuat...
+              </>
+            ) : (
+              "Refresh Halaman"
+            )}
           </Button>
         </div>
       </div>
@@ -179,10 +197,10 @@ export default function AppDashboard({
                 <li key={navigation.name}>
                   <Select value={selectedValue} onValueChange={handleSelect}>
                     <SelectTrigger
-                      className={cn("w-full font-semibold", isMobile && "h-8")}
+                      className={cn("w-full font-bold", isMobile && "h-8")}
                     >
                       <SelectValue
-                        placeholder={isMobile ? navigation.icon : "Aksi cepat"}
+                        placeholder={isMobile ? navigation.icon : "Aksi Cepat"}
                       />
                     </SelectTrigger>
                     <SelectContent>
@@ -259,8 +277,14 @@ export default function AppDashboard({
               variant="outline"
               size="icon"
               className={cn(isMobile && "h-8 w-8")}
+              onClick={handleRefresh}
+              disabled={isRefreshing}
             >
-              <RefreshCw className="w-4 h-4" />
+              {isRefreshing ? (
+                <RefreshCw className="w-4 h-4 animate-spin" />
+              ) : (
+                <RefreshCw className="w-4 h-4" />
+              )}
             </Button>
             <Button
               variant="outline"
@@ -271,7 +295,18 @@ export default function AppDashboard({
             </Button>
           </div>
         </header>
-        <main className={cn("p-4", isMobile && "p-2")}>{children}</main>
+        <main className={cn("p-4", isMobile && "p-2")}>
+          {isLoading ? (
+            <div className="flex items-center justify-center h-full">
+              <div className="text-center">
+                <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-gray-900" />
+                <p className="mt-2">Memuat data...</p>
+              </div>
+            </div>
+          ) : (
+            children
+          )}
+        </main>
       </ResizablePanel>
     </ResizablePanelGroup>
   );

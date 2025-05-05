@@ -1,6 +1,13 @@
 "use client";
 
-import { ArrowLeft, Boxes, Package, PackageOpen, Undo2 } from "lucide-react";
+import {
+  ArrowLeft,
+  Boxes,
+  Package,
+  PackageOpen,
+  RefreshCw,
+  Undo2
+} from "lucide-react";
 import Link from "next/link";
 import { useEffect, useState } from "react";
 import { toast } from "sonner";
@@ -29,6 +36,7 @@ export default function ProductsPage() {
   const [products, setProducts] = useState<Product[]>([]);
   const [stockLevels, setStockLevels] = useState<StockLevel[]>([]);
   const [isLoading, setIsLoading] = useState(true);
+  const [isRefreshing, setIsRefreshing] = useState(false);
   const [isMobile, setIsMobile] = useState(false);
 
   useEffect(() => {
@@ -42,28 +50,34 @@ export default function ProductsPage() {
     return () => window.removeEventListener("resize", checkMobile);
   }, []);
 
-  useEffect(() => {
-    const loadData = async () => {
-      try {
-        const service = InventoryService.getInstance();
-        const [productsData, stockData] = await Promise.all([
-          service.getAllProducts(),
-          service.getAllStockLevels()
-        ]);
-        setProducts(productsData);
-        setStockLevels(stockData);
-      } catch (error) {
-        console.error("Gagal memuat data:", error);
-        toast.error("Error", {
-          description: "Gagal memuat data produk"
-        });
-      } finally {
-        setIsLoading(false);
-      }
-    };
+  const loadData = async () => {
+    try {
+      const service = InventoryService.getInstance();
+      const [productsData, stockData] = await Promise.all([
+        service.getAllProducts(),
+        service.getAllStockLevels()
+      ]);
+      setProducts(productsData);
+      setStockLevels(stockData);
+    } catch (error) {
+      console.error("Gagal memuat data:", error);
+      toast.error("Gagal memuat data produk", {
+        description: "Silakan coba lagi atau refresh halaman"
+      });
+    } finally {
+      setIsLoading(false);
+      setIsRefreshing(false);
+    }
+  };
 
+  useEffect(() => {
     loadData();
   }, []);
+
+  const handleRefresh = () => {
+    setIsRefreshing(true);
+    loadData();
+  };
 
   const getProductStock = (productId: number) => {
     const productStock = stockLevels.filter(
@@ -77,7 +91,7 @@ export default function ProductsPage() {
       <div className="flex items-center justify-center h-full">
         <div className="text-center">
           <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-gray-900" />
-          <p className="mt-2">Memuat data...</p>
+          <p className="mt-2">Memuat data produk...</p>
         </div>
       </div>
     );
@@ -100,29 +114,71 @@ export default function ProductsPage() {
           </div>
         </div>
         <div className="flex flex-wrap gap-2">
-          <Button variant="outline" size={isMobile ? "sm" : "default"} asChild>
+          <Button
+            variant="outline"
+            size={isMobile ? "sm" : "default"}
+            asChild
+            disabled={isRefreshing}
+          >
             <Link href="/p/in">
               <Package className={cn("mr-2 h-4 w-4", isMobile && "mr-0")} />
               {!isMobile && "Produk Masuk"}
             </Link>
           </Button>
-          <Button variant="outline" size={isMobile ? "sm" : "default"} asChild>
+          <Button
+            variant="outline"
+            size={isMobile ? "sm" : "default"}
+            asChild
+            disabled={isRefreshing}
+          >
             <Link href="/p/out">
               <PackageOpen className={cn("mr-2 h-4 w-4", isMobile && "mr-0")} />
               {!isMobile && "Produk Keluar"}
             </Link>
           </Button>
-          <Button variant="outline" size={isMobile ? "sm" : "default"} asChild>
+          <Button
+            variant="outline"
+            size={isMobile ? "sm" : "default"}
+            asChild
+            disabled={isRefreshing}
+          >
             <Link href="/p/return">
               <Undo2 className={cn("mr-2 h-4 w-4", isMobile && "mr-0")} />
               {!isMobile && "Produk Return"}
             </Link>
           </Button>
-          <Button size={isMobile ? "sm" : "default"} asChild>
+          <Button
+            size={isMobile ? "sm" : "default"}
+            asChild
+            disabled={isRefreshing}
+          >
             <Link href="/p/add">
               <Boxes className={cn("mr-2 h-4 w-4", isMobile && "mr-0")} />
               {!isMobile && "Tambah Produk"}
             </Link>
+          </Button>
+          <Button
+            variant="outline"
+            size={isMobile ? "sm" : "default"}
+            onClick={handleRefresh}
+            disabled={isRefreshing}
+          >
+            {isRefreshing ? (
+              <>
+                <RefreshCw
+                  className={cn(
+                    "mr-2 h-4 w-4 animate-spin",
+                    isMobile && "mr-0"
+                  )}
+                />
+                {!isMobile && "Memuat..."}
+              </>
+            ) : (
+              <>
+                <RefreshCw className={cn("mr-2 h-4 w-4", isMobile && "mr-0")} />
+                {!isMobile && "Refresh"}
+              </>
+            )}
           </Button>
         </div>
       </div>
