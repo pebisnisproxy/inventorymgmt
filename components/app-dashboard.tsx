@@ -2,17 +2,19 @@
 
 import {
   Boxes,
-  Edit,
+  Home,
   Package,
   PackageOpen,
   PlusCircle,
   RefreshCw,
   Search,
-  Trash,
   Undo2
 } from "lucide-react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
+import { useEffect, useState } from "react";
+
+import { Category, InventoryService, Product } from "@/lib/inventory-service";
 
 import { Button } from "@/components/ui/button";
 import {
@@ -32,27 +34,29 @@ import {
 
 const navigations = [
   {
-    name: "Stok Produk",
-    icon: <Boxes />,
-    children: []
+    name: "Beranda",
+    href: "/",
+    icon: <Home className="mr-2 h-4 w-4" />
+  },
+  {
+    name: "Produk",
+    icon: <Boxes className="mr-2 h-4 w-4" />,
+    children: true
   },
   {
     name: "Produk Masuk",
     href: "/p/in",
-    type: "in",
-    icon: <Package />
+    icon: <Package className="mr-2 h-4 w-4" />
   },
   {
     name: "Produk Keluar",
     href: "/p/out",
-    type: "out",
-    icon: <PackageOpen />
+    icon: <PackageOpen className="mr-2 h-4 w-4" />
   },
   {
     name: "Produk Return",
     href: "/p/return",
-    type: "return",
-    icon: <Undo2 />
+    icon: <Undo2 className="mr-2 h-4 w-4" />
   }
 ];
 
@@ -62,70 +66,117 @@ export default function AppDashboard({
   children: React.ReactNode;
 }) {
   const router = useRouter();
+  const [products, setProducts] = useState<Product[]>([]);
+  const [categories, setCategories] = useState<Category[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
 
-  function handleSelect(value: string) {
-    if (value.includes("navigate")) {
-      const action = value.split(":")[1];
-      router.push(`/p/${action}`);
-      return;
+  useEffect(() => {
+    const loadData = async () => {
+      try {
+        const service = InventoryService.getInstance();
+        await service.initialize();
+        const [productsData, categoriesData] = await Promise.all([
+          service.getAllProducts(),
+          service.getAllCategories()
+        ]);
+        setProducts(productsData);
+        setCategories(categoriesData);
+      } catch (error) {
+        console.error("Gagal memuat data:", error);
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    loadData();
+  }, []);
+
+  const handleSelect = (value: string) => {
+    if (value.startsWith("navigate:")) {
+      const path = value.replace("navigate:", "");
+      router.push(`/p/${path}`);
+    } else if (value.startsWith("product:")) {
+      const id = value.replace("product:", "");
+      router.push(`/p/detail?id=${id}`);
+    } else if (value.startsWith("category:")) {
+      const id = value.replace("category:", "");
+      router.push(`/c?id=${id}`);
     }
-
-    router.push(value);
-  }
+  };
 
   return (
     <ResizablePanelGroup direction="horizontal" className="w-full min-h-screen">
       <ResizablePanel
-        defaultSize={24}
-        minSize={24}
+        defaultSize={16}
+        minSize={16}
         maxSize={32}
         className="p-4"
       >
-        <ul className="space-y-4">
-          {navigations.map((navigation) =>
-            navigation.children ? (
-              <li key={navigation.name}>
-                <Select onValueChange={handleSelect}>
-                  <SelectTrigger className="w-full font-bold">
-                    <SelectValue placeholder={navigation.name} />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectGroup>
-                      <SelectLabel>Navigasi</SelectLabel>
-                      <SelectItem value="navigate:">
-                        <Boxes /> Semua Produk
-                      </SelectItem>
-                      <SelectItem value="navigate:add">
-                        <PlusCircle /> Tambah Produk
-                      </SelectItem>
-                      <SelectLabel>Produk</SelectLabel>
-                      <SelectItem value="apple">Apple</SelectItem>
-                      <SelectItem value="banana">Banana</SelectItem>
-                      <SelectItem value="blueberry">Blueberry</SelectItem>
-                      <SelectLabel>Kategori</SelectLabel>
-                      <SelectItem value="apple">Apple</SelectItem>
-                      <SelectItem value="banana">Banana</SelectItem>
-                      <SelectItem value="blueberry">Blueberry</SelectItem>
-                    </SelectGroup>
-                  </SelectContent>
-                </Select>
-              </li>
-            ) : (
-              <li key={navigation.name}>
-                <Button
-                  className="w-full justify-start"
-                  variant="outline"
-                  asChild
-                >
-                  <Link href={navigation.href}>
-                    {navigation.icon}
-                    {navigation.name}
-                  </Link>
-                </Button>
-              </li>
-            )
-          )}
-        </ul>
+        <div className="flex h-full flex-col gap-4">
+          <div className="flex items-center gap-2">
+            <Boxes className="h-6 w-6" />
+            <span className="font-bold">Inventory Management</span>
+          </div>
+
+          <ul className="space-y-4">
+            {navigations.map((navigation) =>
+              navigation.children ? (
+                <li key={navigation.name}>
+                  <Select onValueChange={handleSelect}>
+                    <SelectTrigger className="w-full font-bold">
+                      <SelectValue placeholder={navigation.name} />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectGroup>
+                        <SelectLabel>Navigasi</SelectLabel>
+                        <SelectItem value="navigate:">
+                          <Boxes className="mr-2 h-4 w-4 inline" /> Semua Produk
+                        </SelectItem>
+                        <SelectItem value="navigate:add">
+                          <PlusCircle className="mr-2 h-4 w-4 inline" /> Tambah
+                          Produk
+                        </SelectItem>
+
+                        <SelectLabel>Produk</SelectLabel>
+                        {products.map((product) => (
+                          <SelectItem
+                            key={product.id}
+                            value={`product:${product.id}`}
+                          >
+                            {product.name}
+                          </SelectItem>
+                        ))}
+
+                        <SelectLabel>Kategori</SelectLabel>
+                        {categories.map((category) => (
+                          <SelectItem
+                            key={category.id}
+                            value={`category:${category.id}`}
+                          >
+                            {category.name}
+                          </SelectItem>
+                        ))}
+                      </SelectGroup>
+                    </SelectContent>
+                  </Select>
+                </li>
+              ) : (
+                <li key={navigation.name}>
+                  <Button
+                    className="w-full justify-start"
+                    variant="outline"
+                    asChild
+                  >
+                    <Link href={navigation.href ?? "#"}>
+                      {navigation.icon}
+                      {navigation.name}
+                    </Link>
+                  </Button>
+                </li>
+              )
+            )}
+          </ul>
+        </div>
       </ResizablePanel>
       <ResizableHandle />
       <ResizablePanel>
