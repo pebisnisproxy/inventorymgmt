@@ -29,10 +29,9 @@ import {
 } from "@/components/ui/select";
 
 const productFormSchema = z.object({
-  name: z.string().min(1, "Name is required"),
+  name: z.string().min(1, "Nama harus diisi"),
   category_id: z.number().nullable(),
-  new_category: z.string().optional(),
-  selling_price: z.number().min(0, "Price must be positive")
+  selling_price: z.number().min(0, "Harga harus positif")
 });
 
 type ProductFormValues = z.infer<typeof productFormSchema>;
@@ -42,72 +41,72 @@ export default function AddProductPage() {
   const { addProduct } = useProductStore();
   const [categories, setCategories] = useState<Category[]>([]);
   const [isCreatingCategory, setIsCreatingCategory] = useState(false);
+  const [newCategoryName, setNewCategoryName] = useState("");
 
   const form = useForm<ProductFormValues>({
     resolver: zodResolver(productFormSchema),
     defaultValues: {
       name: "",
       category_id: null,
-      new_category: "",
       selling_price: 0
     }
   });
 
   useEffect(() => {
-    const initializeDatabase = async () => {
-      const service = InventoryService.getInstance();
-      await service.initialize();
-      await loadCategories();
+    const loadCategories = async () => {
+      try {
+        const service = InventoryService.getInstance();
+        const loadedCategories = await service.getAllCategories();
+        setCategories(loadedCategories);
+      } catch (error) {
+        console.error("Gagal memuat kategori:", error);
+        toast.error("Gagal memuat kategori");
+      }
     };
 
-    initializeDatabase();
+    loadCategories();
   }, []);
 
-  const loadCategories = async () => {
+  const handleCreateCategory = async () => {
+    if (!newCategoryName.trim()) {
+      toast.error("Nama kategori harus diisi");
+      return;
+    }
+
     try {
       const service = InventoryService.getInstance();
-      const loadedCategories = await service.getAllCategories();
-      setCategories(loadedCategories);
+      const categoryId = await service.createCategory({
+        name: newCategoryName.trim()
+      });
+
+      if (categoryId) {
+        const updatedCategories = await service.getAllCategories();
+        setCategories(updatedCategories);
+        form.setValue("category_id", categoryId);
+        setIsCreatingCategory(false);
+        setNewCategoryName("");
+        toast.success("Kategori berhasil ditambahkan");
+      }
     } catch (error) {
-      console.error("Failed to load categories:", error);
-      toast.error("Failed to load categories");
+      console.error("Gagal membuat kategori:", error);
+      toast.error("Gagal membuat kategori");
     }
   };
 
   const onSubmit = async (values: ProductFormValues) => {
     try {
-      let categoryId = values.category_id;
-
-      // If creating a new category
-      if (isCreatingCategory && values.new_category) {
-        const service = InventoryService.getInstance();
-        const newCategory = await service.createCategory({
-          name: values.new_category
-        });
-        if (newCategory) {
-          categoryId = newCategory;
-        }
-      }
-
-      // Ensure category_id is a number or null
-      const productData = {
-        ...values,
-        category_id: categoryId !== null ? Number(categoryId) : null,
-        selling_price: Number(values.selling_price)
-      };
-
-      await addProduct(productData);
-      toast.success("Product added successfully");
+      await addProduct(values);
+      toast.success("Produk berhasil ditambahkan");
       router.push("/p");
     } catch (error) {
-      toast.error("Failed to add product");
+      toast.error("Gagal menambahkan produk");
       console.error(error);
     }
   };
 
   return (
     <div className="container mx-auto py-6">
-      <h1 className="text-2xl font-bold mb-6">Add Product</h1>
+      <h1 className="text-2xl font-bold mb-6">Tambah Produk</h1>
       <Form {...form}>
         <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
           <FormField
@@ -115,89 +114,87 @@ export default function AddProductPage() {
             name="name"
             render={({ field }) => (
               <FormItem>
-                <FormLabel>Name</FormLabel>
+                <FormLabel>Nama</FormLabel>
                 <FormControl>
-                  <Input placeholder="Product name" {...field} />
+                  <Input placeholder="Nama Produk" {...field} />
                 </FormControl>
                 <FormMessage />
               </FormItem>
             )}
           />
-          <div className="space-y-2">
-            <div className="flex items-center space-x-2">
-              <Button
-                type="button"
-                variant={isCreatingCategory ? "default" : "outline"}
-                onClick={() => setIsCreatingCategory(false)}
-              >
-                Select Category
-              </Button>
-              <Button
-                type="button"
-                variant={isCreatingCategory ? "outline" : "default"}
-                onClick={() => setIsCreatingCategory(true)}
-              >
-                Create New Category
-              </Button>
-            </div>
-            {isCreatingCategory ? (
-              <FormField
-                control={form.control}
-                name="new_category"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>New Category Name</FormLabel>
-                    <FormControl>
-                      <Input placeholder="Enter new category name" {...field} />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-            ) : (
-              <FormField
-                control={form.control}
-                name="category_id"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Category</FormLabel>
+          <FormField
+            control={form.control}
+            name="category_id"
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel>Kategori</FormLabel>
+                {isCreatingCategory ? (
+                  <div className="space-y-2">
+                    <Input
+                      placeholder="Nama Kategori Baru"
+                      value={newCategoryName}
+                      onChange={(e) => setNewCategoryName(e.target.value)}
+                    />
+                    <div className="flex gap-2">
+                      <Button type="button" onClick={handleCreateCategory}>
+                        Simpan Kategori
+                      </Button>
+                      <Button
+                        type="button"
+                        variant="outline"
+                        onClick={() => {
+                          setIsCreatingCategory(false);
+                          setNewCategoryName("");
+                        }}
+                      >
+                        Batal
+                      </Button>
+                    </div>
+                  </div>
+                ) : (
+                  <div className="space-y-2">
                     <Select
                       onValueChange={(value) =>
                         field.onChange(value ? Number(value) : null)
                       }
-                      value={field.value?.toString()}
+                      value={field.value?.toString() || ""}
                     >
                       <FormControl>
                         <SelectTrigger>
-                          <SelectValue placeholder="Select a category" />
+                          <SelectValue placeholder="Pilih kategori" />
                         </SelectTrigger>
                       </FormControl>
                       <SelectContent>
-                        {categories.map(
-                          (category) =>
-                            category.id && (
-                              <SelectItem
-                                key={category.id}
-                                value={category.id.toString()}
-                              >
-                                {category.name}
-                              </SelectItem>
-                            )
-                        )}
+                        <SelectItem value="">Tidak Berkategori</SelectItem>
+                        {categories.map((category) => (
+                          <SelectItem
+                            key={category.id}
+                            value={category.id?.toString() || ""}
+                          >
+                            {category.name}
+                          </SelectItem>
+                        ))}
                       </SelectContent>
                     </Select>
-                    <FormMessage />
-                  </FormItem>
+                    <Button
+                      type="button"
+                      variant="outline"
+                      onClick={() => setIsCreatingCategory(true)}
+                    >
+                      Buat Kategori Baru
+                    </Button>
+                  </div>
                 )}
-              />
+                <FormMessage />
+              </FormItem>
             )}
-          </div>
+          />
           <FormField
             control={form.control}
             name="selling_price"
             render={({ field }) => (
               <FormItem>
-                <FormLabel>Selling Price</FormLabel>
+                <FormLabel>Harga Jual</FormLabel>
                 <FormControl>
                   <Input
                     type="number"
@@ -211,13 +208,13 @@ export default function AddProductPage() {
             )}
           />
           <div className="flex gap-2">
-            <Button type="submit">Add Product</Button>
+            <Button type="submit">Simpan Produk</Button>
             <Button
               type="button"
               variant="outline"
               onClick={() => router.push("/p")}
             >
-              Cancel
+              Batal
             </Button>
           </div>
         </form>

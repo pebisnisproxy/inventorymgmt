@@ -4,7 +4,6 @@ import { useRouter, useSearchParams } from "next/navigation";
 import { useEffect } from "react";
 import { toast } from "sonner";
 
-import { Product } from "@/lib/inventory-service";
 import { useProductStore } from "@/lib/store/product-store";
 
 import { Button } from "@/components/ui/button";
@@ -22,39 +21,45 @@ export default function DeleteProductPage() {
   }, [id, router]);
 
   const handleDelete = async () => {
-    if (!id) return;
-
     try {
       await deleteProduct(id);
-      toast.success("Product deleted successfully");
+      toast.success("Produk berhasil dihapus");
       router.push("/p");
     } catch (error) {
-      toast.error("Failed to delete product");
+      toast.error("Gagal menghapus produk");
       console.error(error);
     }
   };
 
-  const product = products.find((p: Product) => p.id === id);
+  const product = products.find((p) => p.id === id);
 
   if (!product) {
-    return null;
+    return (
+      <div className="container mx-auto py-6">
+        <div className="text-center">
+          <h1 className="text-2xl font-bold mb-4">Produk Tidak Ditemukan</h1>
+          <p className="mb-4">Produk yang Anda cari tidak ditemukan.</p>
+          <Button onClick={() => router.push("/p")}>
+            Kembali ke Daftar Produk
+          </Button>
+        </div>
+      </div>
+    );
   }
 
   return (
     <div className="container mx-auto py-6">
-      <h1 className="text-2xl font-bold mb-6">Delete Product</h1>
-      <div className="bg-destructive/10 p-6 rounded-lg">
+      <div className="text-center">
+        <h1 className="text-2xl font-bold mb-4">Hapus Produk</h1>
         <p className="mb-4">
-          Are you sure you want to delete the product{" "}
-          <span className="font-semibold">{product.name}</span>? This action
-          cannot be undone.
+          Apakah Anda yakin ingin menghapus produk "{product.name}"?
         </p>
-        <div className="flex gap-2">
+        <div className="flex justify-center gap-4">
           <Button variant="destructive" onClick={handleDelete}>
-            Delete Product
+            Ya, Hapus
           </Button>
           <Button variant="outline" onClick={() => router.push("/p")}>
-            Cancel
+            Batal
           </Button>
         </div>
       </div>

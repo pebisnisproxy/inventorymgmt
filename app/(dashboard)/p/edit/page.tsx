@@ -2,12 +2,12 @@
 
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useRouter, useSearchParams } from "next/navigation";
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import { useForm } from "react-hook-form";
 import { toast } from "sonner";
 import * as z from "zod";
 
-import { Product } from "@/lib/inventory-service";
+import { Category, InventoryService, Product } from "@/lib/inventory-service";
 import { useProductStore } from "@/lib/store/product-store";
 
 import { Button } from "@/components/ui/button";
@@ -30,9 +30,9 @@ import {
 
 const productFormSchema = z.object({
   id: z.number(),
-  name: z.string().min(1, "Name is required"),
+  name: z.string().min(1, "Nama harus diisi"),
   category_id: z.number().nullable(),
-  selling_price: z.number().min(0, "Price must be positive")
+  selling_price: z.number().min(0, "Harga harus positif")
 });
 
 type ProductFormValues = z.infer<typeof productFormSchema>;
@@ -41,7 +41,8 @@ export default function EditProductPage() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const id = Number(searchParams.get("id"));
-  const { products, updateProduct, fetchProducts } = useProductStore();
+  const { products, updateProduct } = useProductStore();
+  const [categories, setCategories] = useState<Category[]>([]);
 
   const form = useForm<ProductFormValues>({
     resolver: zodResolver(productFormSchema),
@@ -52,6 +53,21 @@ export default function EditProductPage() {
       selling_price: 0
     }
   });
+
+  useEffect(() => {
+    const loadCategories = async () => {
+      try {
+        const service = InventoryService.getInstance();
+        const loadedCategories = await service.getAllCategories();
+        setCategories(loadedCategories);
+      } catch (error) {
+        console.error("Gagal memuat kategori:", error);
+        toast.error("Gagal memuat kategori");
+      }
+    };
+
+    loadCategories();
+  }, []);
 
   useEffect(() => {
     if (id) {
@@ -73,18 +89,22 @@ export default function EditProductPage() {
 
   const onSubmit = async (values: ProductFormValues) => {
     try {
-      await updateProduct(values);
-      toast.success("Product updated successfully");
+      const productData = {
+        ...values,
+        category_id: values.category_id || null
+      };
+      await updateProduct(productData);
+      toast.success("Produk berhasil diperbarui");
       router.push("/p");
     } catch (error) {
-      toast.error("Failed to update product");
+      toast.error("Gagal memperbarui produk");
       console.error(error);
     }
   };
 
   return (
     <div className="container mx-auto py-6">
-      <h1 className="text-2xl font-bold mb-6">Edit Product</h1>
+      <h1 className="text-2xl font-bold mb-6">Ubah Produk</h1>
       <Form {...form}>
         <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
           <FormField
@@ -92,9 +112,9 @@ export default function EditProductPage() {
             name="name"
             render={({ field }) => (
               <FormItem>
-                <FormLabel>Name</FormLabel>
+                <FormLabel>Nama</FormLabel>
                 <FormControl>
-                  <Input placeholder="Product name" {...field} />
+                  <Input placeholder="Nama Produk" {...field} />
                 </FormControl>
                 <FormMessage />
               </FormItem>
@@ -105,21 +125,28 @@ export default function EditProductPage() {
             name="category_id"
             render={({ field }) => (
               <FormItem>
-                <FormLabel>Category</FormLabel>
+                <FormLabel>Kategori</FormLabel>
                 <Select
                   onValueChange={(value) =>
                     field.onChange(value ? Number(value) : null)
                   }
-                  value={field.value?.toString()}
+                  value={field.value?.toString() || ""}
                 >
                   <FormControl>
                     <SelectTrigger>
-                      <SelectValue placeholder="Select a category" />
+                      <SelectValue placeholder="Pilih kategori" />
                     </SelectTrigger>
                   </FormControl>
                   <SelectContent>
-                    {/* <SelectItem value="uncategorized">Uncategorized</SelectItem> */}
-                    {/* Categories will be loaded here */}
+                    <SelectItem value="">Tidak Berkategori</SelectItem>
+                    {categories.map((category) => (
+                      <SelectItem
+                        key={category.id}
+                        value={category.id?.toString() || ""}
+                      >
+                        {category.name}
+                      </SelectItem>
+                    ))}
                   </SelectContent>
                 </Select>
                 <FormMessage />
@@ -131,7 +158,7 @@ export default function EditProductPage() {
             name="selling_price"
             render={({ field }) => (
               <FormItem>
-                <FormLabel>Selling Price</FormLabel>
+                <FormLabel>Harga Jual</FormLabel>
                 <FormControl>
                   <Input
                     type="number"
@@ -145,13 +172,13 @@ export default function EditProductPage() {
             )}
           />
           <div className="flex gap-2">
-            <Button type="submit">Update Product</Button>
+            <Button type="submit">Perbarui Produk</Button>
             <Button
               type="button"
               variant="outline"
               onClick={() => router.push("/p")}
             >
-              Cancel
+              Batal
             </Button>
           </div>
         </form>

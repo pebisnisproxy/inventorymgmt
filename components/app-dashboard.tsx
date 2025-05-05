@@ -64,7 +64,7 @@ export default function AppDashboard({
   const router = useRouter();
 
   function handleSelect(value: string) {
-    if (value.includes("action")) {
+    if (value.includes("navigate")) {
       const action = value.split(":")[1];
       router.push(`/p/${action}`);
       return;
@@ -91,22 +91,21 @@ export default function AppDashboard({
                   </SelectTrigger>
                   <SelectContent>
                     <SelectGroup>
-                      <SelectLabel>Category</SelectLabel>
+                      <SelectLabel>Navigasi</SelectLabel>
+                      <SelectItem value="navigate:">
+                        <Boxes /> Semua Produk
+                      </SelectItem>
+                      <SelectItem value="navigate:add">
+                        <PlusCircle /> Tambah Produk
+                      </SelectItem>
+                      <SelectLabel>Produk</SelectLabel>
                       <SelectItem value="apple">Apple</SelectItem>
                       <SelectItem value="banana">Banana</SelectItem>
                       <SelectItem value="blueberry">Blueberry</SelectItem>
-                      <SelectItem value="grapes">Grapes</SelectItem>
-                      <SelectItem value="pineapple">Pineapple</SelectItem>
-                      <SelectLabel>Actions</SelectLabel>
-                      <SelectItem value="action:add">
-                        <PlusCircle /> Add
-                      </SelectItem>
-                      <SelectItem value="action:edit">
-                        <Edit /> Edit
-                      </SelectItem>
-                      <SelectItem value="action:delete">
-                        <Trash /> Delete
-                      </SelectItem>
+                      <SelectLabel>Kategori</SelectLabel>
+                      <SelectItem value="apple">Apple</SelectItem>
+                      <SelectItem value="banana">Banana</SelectItem>
+                      <SelectItem value="blueberry">Blueberry</SelectItem>
                     </SelectGroup>
                   </SelectContent>
                 </Select>
