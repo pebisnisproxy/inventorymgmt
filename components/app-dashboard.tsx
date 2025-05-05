@@ -1,12 +1,18 @@
+"use client";
+
 import {
   Boxes,
+  Edit,
   Package,
   PackageOpen,
+  PlusCircle,
   RefreshCw,
   Search,
+  Trash,
   Undo2
 } from "lucide-react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 
 import { Button } from "@/components/ui/button";
 import {
@@ -23,8 +29,6 @@ import {
   SelectTrigger,
   SelectValue
 } from "@/components/ui/select";
-
-import { ProductDialog } from "./product-dialog";
 
 const navigations = [
   {
@@ -57,6 +61,18 @@ export default function AppDashboard({
 }: {
   children: React.ReactNode;
 }) {
+  const router = useRouter();
+
+  function handleSelect(value: string) {
+    if (value.includes("action")) {
+      const action = value.split(":")[1];
+      router.push(`/p/${action}`);
+      return;
+    }
+
+    router.push(value);
+  }
+
   return (
     <ResizablePanelGroup direction="horizontal" className="w-full min-h-screen">
       <ResizablePanel
@@ -69,7 +85,7 @@ export default function AppDashboard({
           {navigations.map((navigation) =>
             navigation.children ? (
               <li key={navigation.name}>
-                <Select>
+                <Select onValueChange={handleSelect}>
                   <SelectTrigger className="w-full font-bold">
                     <SelectValue placeholder={navigation.name} />
                   </SelectTrigger>
@@ -81,6 +97,16 @@ export default function AppDashboard({
                       <SelectItem value="blueberry">Blueberry</SelectItem>
                       <SelectItem value="grapes">Grapes</SelectItem>
                       <SelectItem value="pineapple">Pineapple</SelectItem>
+                      <SelectLabel>Actions</SelectLabel>
+                      <SelectItem value="action:add">
+                        <PlusCircle /> Add
+                      </SelectItem>
+                      <SelectItem value="action:edit">
+                        <Edit /> Edit
+                      </SelectItem>
+                      <SelectItem value="action:delete">
+                        <Trash /> Delete
+                      </SelectItem>
                     </SelectGroup>
                   </SelectContent>
                 </Select>
