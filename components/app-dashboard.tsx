@@ -15,6 +15,7 @@ import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 
 import { Category, InventoryService, Product } from "@/lib/inventory-service";
+import { cn } from "@/lib/utils";
 
 import { Button } from "@/components/ui/button";
 import {
@@ -36,27 +37,27 @@ const navigations = [
   {
     name: "Beranda",
     href: "/",
-    icon: <Home className="mr-2 h-4 w-4" />
+    icon: <Home className="h-4 w-4" />
   },
   {
     name: "Produk",
-    icon: <Boxes className="mr-2 h-4 w-4" />,
+    icon: <Boxes className="h-4 w-4" />,
     children: true
   },
   {
     name: "Produk Masuk",
     href: "/p/in",
-    icon: <Package className="mr-2 h-4 w-4" />
+    icon: <Package className="h-4 w-4" />
   },
   {
     name: "Produk Keluar",
     href: "/p/out",
-    icon: <PackageOpen className="mr-2 h-4 w-4" />
+    icon: <PackageOpen className="h-4 w-4" />
   },
   {
     name: "Produk Return",
     href: "/p/return",
-    icon: <Undo2 className="mr-2 h-4 w-4" />
+    icon: <Undo2 className="h-4 w-4" />
   }
 ];
 
@@ -66,23 +67,51 @@ export default function AppDashboard({
   children: React.ReactNode;
 }) {
   const router = useRouter();
+  // const pathname = usePathname();
   const [products, setProducts] = useState<Product[]>([]);
   const [categories, setCategories] = useState<Category[]>([]);
   const [isLoading, setIsLoading] = useState(true);
+  const [isMobile, setIsMobile] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [selectedValue, setSelectedValue] = useState<string>("");
+
+  useEffect(() => {
+    const checkMobile = () => {
+      setIsMobile(window.innerWidth < 768);
+    };
+
+    checkMobile();
+    window.addEventListener("resize", checkMobile);
+
+    return () => window.removeEventListener("resize", checkMobile);
+  }, []);
 
   useEffect(() => {
     const loadData = async () => {
       try {
         const service = InventoryService.getInstance();
-        await service.initialize();
+
+        // Coba inisialisasi database
+        try {
+          await service.initialize();
+        } catch (initError) {
+          console.error("Gagal menginisialisasi database:", initError);
+          throw new Error("Gagal menginisialisasi database");
+        }
+
+        // Tunggu sebentar untuk memastikan database siap
+        await new Promise((resolve) => setTimeout(resolve, 100));
+
         const [productsData, categoriesData] = await Promise.all([
           service.getAllProducts(),
           service.getAllCategories()
         ]);
         setProducts(productsData);
         setCategories(categoriesData);
+        setError(null);
       } catch (error) {
         console.error("Gagal memuat data:", error);
+        setError("Gagal memuat data. Silakan refresh halaman.");
       } finally {
         setIsLoading(false);
       }
@@ -91,7 +120,13 @@ export default function AppDashboard({
     loadData();
   }, []);
 
+  // Reset select value when URL changes
+  // useEffect(() => {
+  //   setSelectedValue("");
+  // }, [pathname]);
+
   const handleSelect = (value: string) => {
+    setSelectedValue(value);
     if (value.startsWith("navigate:")) {
       const path = value.replace("navigate:", "");
       router.push(`/p/${path}`);
@@ -104,27 +139,51 @@ export default function AppDashboard({
     }
   };
 
+  if (error) {
+    return (
+      <div className="flex items-center justify-center h-full">
+        <div className="text-center">
+          <p className="text-red-500 mb-4">{error}</p>
+          <Button onClick={() => window.location.reload()}>
+            Refresh Halaman
+          </Button>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <ResizablePanelGroup direction="horizontal" className="w-full min-h-screen">
       <ResizablePanel
-        defaultSize={16}
-        minSize={16}
-        maxSize={32}
-        className="p-4"
+        defaultSize={isMobile ? 8 : 24}
+        minSize={isMobile ? 8 : 24}
+        maxSize={isMobile ? 8 : 32}
+        className={cn("p-4", isMobile && "p-2")}
       >
         <div className="flex h-full flex-col gap-4">
-          <div className="flex items-center gap-2">
+          <div
+            className={cn(
+              "flex items-center gap-2",
+              isMobile && "justify-center"
+            )}
+          >
             <Boxes className="h-6 w-6" />
-            <span className="font-bold">Inventory Management</span>
+            {!isMobile && (
+              <span className="font-bold">Inventory Management</span>
+            )}
           </div>
 
-          <ul className="space-y-4">
+          <ul className={cn("space-y-4", isMobile && "space-y-2")}>
             {navigations.map((navigation) =>
               navigation.children ? (
                 <li key={navigation.name}>
-                  <Select onValueChange={handleSelect}>
-                    <SelectTrigger className="w-full font-bold">
-                      <SelectValue placeholder={navigation.name} />
+                  <Select value={selectedValue} onValueChange={handleSelect}>
+                    <SelectTrigger
+                      className={cn("w-full font-semibold", isMobile && "h-8")}
+                    >
+                      <SelectValue
+                        placeholder={isMobile ? navigation.icon : "Aksi cepat"}
+                      />
                     </SelectTrigger>
                     <SelectContent>
                       <SelectGroup>
@@ -163,13 +222,19 @@ export default function AppDashboard({
               ) : (
                 <li key={navigation.name}>
                   <Button
-                    className="w-full justify-start"
+                    className={cn(
+                      "w-full justify-start",
+                      isMobile && "justify-center h-8"
+                    )}
                     variant="outline"
                     asChild
+                    title={navigation.name}
                   >
                     <Link href={navigation.href ?? "#"}>
                       {navigation.icon}
-                      {navigation.name}
+                      {!isMobile && (
+                        <span className="ml-2">{navigation.name}</span>
+                      )}
                     </Link>
                   </Button>
                 </li>
@@ -180,18 +245,33 @@ export default function AppDashboard({
       </ResizablePanel>
       <ResizableHandle />
       <ResizablePanel>
-        <header className="flex items-center justify-between p-2 border-b">
-          <h1 className="font-bold ml-2">{"> ivmv2"}</h1>
+        <header
+          className={cn(
+            "flex items-center justify-between p-2 border-b",
+            isMobile && "p-2"
+          )}
+        >
+          <h1 className={cn("font-bold ml-2", isMobile && "ml-1 text-sm")}>
+            {"> ivmv2"}
+          </h1>
           <div className="flex items-center space-x-2">
-            <Button variant="outline" size="icon">
+            <Button
+              variant="outline"
+              size="icon"
+              className={cn(isMobile && "h-8 w-8")}
+            >
               <RefreshCw className="w-4 h-4" />
             </Button>
-            <Button variant="outline" size="icon">
+            <Button
+              variant="outline"
+              size="icon"
+              className={cn(isMobile && "h-8 w-8")}
+            >
               <Search className="w-4 h-4" />
             </Button>
           </div>
         </header>
-        <main className="p-4">{children}</main>
+        <main className={cn("p-4", isMobile && "p-2")}>{children}</main>
       </ResizablePanel>
     </ResizablePanelGroup>
   );
