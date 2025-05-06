@@ -49,7 +49,6 @@ export default function ProductReturnPage() {
         }
       ];
       setInvoices(mockData);
-      toast.success("Data produk return berhasil dimuat");
     } catch (error) {
       console.error("Gagal memuat data:", error);
       toast.error("Gagal memuat data produk return", {
