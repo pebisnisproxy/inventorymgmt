@@ -1,8 +1,8 @@
 import { create } from "zustand";
 
 import { InventoryManager } from "../inventory-manager";
-import { Product } from "../inventory-service";
 import { InventoryService } from "../inventory-service";
+import { Product } from "../types/database";
 
 interface ProductState {
   products: Product[];
@@ -10,8 +10,12 @@ interface ProductState {
   error: string | null;
   selectedProduct: Product | null;
   fetchProducts: () => Promise<void>;
-  addProduct: (product: Omit<Product, "id">) => Promise<void>;
-  updateProduct: (product: Product) => Promise<void>;
+  addProduct: (
+    product: Omit<Product, "id" | "created_at" | "updated_at">
+  ) => Promise<void>;
+  updateProduct: (
+    product: Omit<Product, "created_at" | "updated_at">
+  ) => Promise<void>;
   deleteProduct: (id: number) => Promise<void>;
   setSelectedProduct: (product: Product | null) => void;
 }
@@ -43,7 +47,9 @@ export const useProductStore = create<ProductState>(
       }
     },
 
-    addProduct: async (product: Omit<Product, "id">) => {
+    addProduct: async (
+      product: Omit<Product, "id" | "created_at" | "updated_at">
+    ) => {
       set((state) => ({ ...state, isLoading: true, error: null }));
       try {
         await InventoryManager.initialize();
@@ -61,7 +67,9 @@ export const useProductStore = create<ProductState>(
       }
     },
 
-    updateProduct: async (product: Product) => {
+    updateProduct: async (
+      product: Omit<Product, "created_at" | "updated_at">
+    ) => {
       set((state) => ({ ...state, isLoading: true, error: null }));
       try {
         const service = InventoryService.getInstance();

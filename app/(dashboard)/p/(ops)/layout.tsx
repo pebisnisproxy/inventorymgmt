@@ -13,7 +13,7 @@ export default function ProductOperationLayout({
   children: React.ReactNode;
 }>) {
   const pathname = usePathname();
-  const type = pathname.split("/").pop() as any;
+  const type = pathname.split("/").pop() as "in" | "out" | "return";
   return (
     <div className="lg:p-4">
       <div className="w-max absolute right-4 lg:right-8 flex gap-2 items-center">

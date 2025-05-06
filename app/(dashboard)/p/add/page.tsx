@@ -7,8 +7,9 @@ import { useForm } from "react-hook-form";
 import { toast } from "sonner";
 import * as z from "zod";
 
-import { Category, InventoryService } from "@/lib/inventory-service";
+import { InventoryService } from "@/lib/inventory-service";
 import { useProductStore } from "@/lib/store/product-store";
+import { Category } from "@/lib/types/database";
 
 import { Button } from "@/components/ui/button";
 import {
@@ -77,9 +78,7 @@ export default function AddProductPage() {
     try {
       const service = InventoryService.getInstance();
       await service.initialize();
-      const categoryId = await service.createCategory({
-        name: newCategoryName.trim()
-      });
+      const categoryId = await service.createCategory(newCategoryName.trim());
 
       if (categoryId) {
         const updatedCategories = await service.getAllCategories();
@@ -97,7 +96,10 @@ export default function AddProductPage() {
 
   const onSubmit = async (values: ProductFormValues) => {
     try {
-      await addProduct(values);
+      await addProduct({
+        ...values,
+        image_path: "" // Default empty image path
+      });
       toast.success("Produk berhasil ditambahkan");
       router.push("/p");
     } catch (error) {

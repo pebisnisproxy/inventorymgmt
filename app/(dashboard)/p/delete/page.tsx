@@ -26,7 +26,9 @@ export default function DeleteProductPage() {
       toast.success("Produk berhasil dihapus");
       router.push("/p");
     } catch (error) {
-      toast.error("Gagal menghapus produk");
+      toast.error("Gagal menghapus produk", {
+        description: "Silakan coba lagi atau refresh halaman"
+      });
       console.error(error);
     }
   };
@@ -52,7 +54,7 @@ export default function DeleteProductPage() {
       <div className="text-center">
         <h1 className="text-2xl font-bold mb-4">Hapus Produk</h1>
         <p className="mb-4">
-          Apakah Anda yakin ingin menghapus produk "{product.name}"?
+          Apakah Anda yakin ingin menghapus produk &quot;{product.name}&quot;?
         </p>
         <div className="flex justify-center gap-4">
           <Button variant="destructive" onClick={handleDelete}>

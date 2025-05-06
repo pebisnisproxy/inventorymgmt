@@ -12,7 +12,8 @@ import Link from "next/link";
 import { useEffect, useState } from "react";
 import { toast } from "sonner";
 
-import { InventoryService, Product, StockLevel } from "@/lib/inventory-service";
+import { InventoryService } from "@/lib/inventory-service";
+import { Product, StockLevel } from "@/lib/types/database";
 import { cn, formatCurrency } from "@/lib/utils";
 
 import { Button } from "@/components/ui/button";

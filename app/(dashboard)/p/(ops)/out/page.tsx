@@ -1,12 +1,8 @@
 "use client";
 
-import { RefreshCw } from "lucide-react";
 import { useEffect, useState } from "react";
 import { toast } from "sonner";
 
-import { InventoryService } from "@/lib/inventory-service";
-
-import { Button } from "@/components/ui/button";
 import {
   Table,
   TableBody,
@@ -28,11 +24,9 @@ interface Invoice {
 export default function ProductOutPage() {
   const [invoices, setInvoices] = useState<Invoice[]>([]);
   const [isLoading, setIsLoading] = useState(true);
-  const [isRefreshing, setIsRefreshing] = useState(false);
 
   const loadData = async () => {
     try {
-      const service = InventoryService.getInstance();
       // TODO: Implement actual data fetching
       const mockData = [
         {
@@ -55,6 +49,7 @@ export default function ProductOutPage() {
         }
       ];
       setInvoices(mockData);
+      toast.success("Data produk keluar berhasil dimuat");
     } catch (error) {
       console.error("Gagal memuat data:", error);
       toast.error("Gagal memuat data produk keluar", {
@@ -62,18 +57,12 @@ export default function ProductOutPage() {
       });
     } finally {
       setIsLoading(false);
-      setIsRefreshing(false);
     }
   };
 
   useEffect(() => {
     loadData();
   }, []);
-
-  const handleRefresh = () => {
-    setIsRefreshing(true);
-    loadData();
-  };
 
   if (isLoading) {
     return (
@@ -90,18 +79,6 @@ export default function ProductOutPage() {
     <div className="space-y-12">
       <div className="flex items-center justify-between">
         <h1 className="font-bold text-lg">Scan Produk Keluar</h1>
-        <Button
-          variant="outline"
-          size="icon"
-          onClick={handleRefresh}
-          disabled={isRefreshing}
-        >
-          {isRefreshing ? (
-            <RefreshCw className="h-4 w-4 animate-spin" />
-          ) : (
-            <RefreshCw className="h-4 w-4" />
-          )}
-        </Button>
       </div>
       <Table>
         <TableCaption>Histori barang yang keluar.</TableCaption>

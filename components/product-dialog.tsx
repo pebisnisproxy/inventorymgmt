@@ -1,3 +1,5 @@
+import { throwUnimplemented } from "@/lib/utils";
+
 import { Button } from "@/components/ui/button";
 import {
   Dialog,
@@ -52,7 +54,9 @@ export function ProductDialog({ type, trigger }: ProductDialogProps) {
           </Badge>
         </div>
         <DialogFooter>
-          <Button type="submit">Finish</Button>
+          <Button type="submit" onClick={() => throwUnimplemented()}>
+            Finish
+          </Button>
         </DialogFooter>
       </DialogContent>
     </Dialog>

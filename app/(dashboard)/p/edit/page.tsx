@@ -7,8 +7,9 @@ import { useForm } from "react-hook-form";
 import { toast } from "sonner";
 import * as z from "zod";
 
-import { Category, InventoryService, Product } from "@/lib/inventory-service";
+import { InventoryService } from "@/lib/inventory-service";
 import { useProductStore } from "@/lib/store/product-store";
+import { Category, Product } from "@/lib/types/database";
 
 import { Button } from "@/components/ui/button";
 import {
@@ -91,7 +92,8 @@ export default function EditProductPage() {
     try {
       const productData = {
         ...values,
-        category_id: values.category_id || null
+        category_id: values.category_id || null,
+        image_path: "" // Default empty image path
       };
       await updateProduct(productData);
       toast.success("Produk berhasil diperbarui");

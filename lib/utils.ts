@@ -1,4 +1,5 @@
 import { type ClassValue, clsx } from "clsx";
+import { toast } from "sonner";
 import { twMerge } from "tailwind-merge";
 
 export function cn(...inputs: ClassValue[]) {
@@ -11,4 +12,9 @@ export function formatCurrency(amount: number): string {
     currency: "IDR",
     minimumFractionDigits: 0
   }).format(amount);
+}
+
+export function throwUnimplemented() {
+  toast.error("Still not implemented yet!");
+  throw new Error("Still not implemented yet!");
 }

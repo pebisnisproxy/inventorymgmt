@@ -1,9 +1,13 @@
-import inventoryService, {
+import inventoryService from "./inventory-service";
+import {
   InventoryMovementItem,
+  InventoryValuation,
+  MovementHistory,
   Product,
   ProductVariant,
+  ProductVariantWithProduct,
   StockLevel
-} from "./inventory-service";
+} from "./types/database";
 
 /**
  * Higher-level business logic for inventory operations
@@ -20,9 +24,6 @@ export class InventoryManager {
 
   /**
    * Record a product purchase (stock coming in)
-   */
-  /**
-   * Record a product purchase (stock coming in)
    * @param items List of items being purchased
    * @param notes Optional notes about the purchase
    * @returns The ID of the created inventory movement
@@ -34,7 +35,7 @@ export class InventoryManager {
       costPerUnit: number;
     }>,
     notes?: string
-  ): Promise<number | undefined> {
+  ): Promise<number> {
     // Transform to movement items
     const movementItems: Omit<
       InventoryMovementItem,
@@ -69,7 +70,7 @@ export class InventoryManager {
       sellingPrice: number;
     }>,
     notes?: string
-  ): Promise<number | undefined> {
+  ): Promise<number> {
     // Transform to movement items
     const movementItems: Omit<
       InventoryMovementItem,
@@ -104,7 +105,7 @@ export class InventoryManager {
       pricePerUnit: number;
     }>,
     notes?: string
-  ): Promise<number | undefined> {
+  ): Promise<number> {
     // Transform to movement items
     const movementItems: Omit<
       InventoryMovementItem,
@@ -183,7 +184,7 @@ export class InventoryManager {
    * @returns Inventory valuation report
    */
   public static async getInventoryValuation(): Promise<{
-    items: any[];
+    items: InventoryValuation[];
     totalValue: number;
     itemCount: number;
     variantsCount: number;
@@ -192,12 +193,10 @@ export class InventoryManager {
 
     // Calculate totals
     const totalValue = items.reduce(
-      /* @ts-ignore */
       (sum, item) => sum + Number(item.total_value),
       0
     );
     const itemCount = items.reduce(
-      /* @ts-ignore */
       (sum, item) => sum + Number(item.quantity),
       0
     );
@@ -218,24 +217,13 @@ export class InventoryManager {
    * @returns The ID of the created product
    */
   public static async createProductWithVariants(
-    product: {
-      name: string;
-      category_id: number | null;
-      image_path?: string;
-      selling_price: number;
-    },
-    variants: Array<{
-      handle: string;
-      barcode?: string;
-    }>
-  ): Promise<number | undefined> {
+    product: Omit<Product, "id" | "created_at" | "updated_at">,
+    variants: Array<
+      Omit<ProductVariant, "id" | "product_id" | "created_at" | "updated_at">
+    >
+  ): Promise<number> {
     // Create the product
-    const productId = await inventoryService.createProduct({
-      name: product.name,
-      category_id: product.category_id,
-      image_path: product.image_path,
-      selling_price: product.selling_price
-    });
+    const productId = await inventoryService.createProduct(product);
 
     if (!productId) {
       throw new Error("Failed to create product");
@@ -258,7 +246,10 @@ export class InventoryManager {
    * @param productId Product ID
    * @returns Product details with variant stock information
    */
-  public static async getProductWithStock(productId: number): Promise<any> {
+  public static async getProductWithStock(productId: number): Promise<{
+    product: Product;
+    variants: Array<ProductVariantWithProduct & { stock: number }>;
+  }> {
     // Get product info
     const product = await inventoryService.getProductById(productId);
     if (!product) {
@@ -271,7 +262,7 @@ export class InventoryManager {
     // Get stock levels for each variant
     const variantsWithStock = [];
     for (const variant of variants) {
-      const stock = await inventoryService.getStockLevelForVariant(variant.id!);
+      const stock = await inventoryService.getStockLevelForVariant(variant.id);
       variantsWithStock.push({
         ...variant,
         stock: stock?.quantity || 0
@@ -280,7 +271,7 @@ export class InventoryManager {
 
     // Return combined info
     return {
-      ...product,
+      product,
       variants: variantsWithStock
     };
   }
@@ -290,7 +281,12 @@ export class InventoryManager {
    * @param variantId Variant ID
    * @returns Variant details with movement history
    */
-  public static async getVariantWithHistory(variantId: number): Promise<any> {
+  public static async getVariantWithHistory(variantId: number): Promise<{
+    variant: ProductVariant;
+    product: Product | null;
+    stock: number;
+    history: MovementHistory[];
+  }> {
     // Get variant info
     const variant = await inventoryService.getVariantById(variantId);
     if (!variant) {

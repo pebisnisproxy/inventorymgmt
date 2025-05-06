@@ -4,7 +4,8 @@ import { useRouter, useSearchParams } from "next/navigation";
 import { useEffect, useState } from "react";
 import { toast } from "sonner";
 
-import { Category, InventoryService, Product } from "@/lib/inventory-service";
+import { InventoryService } from "@/lib/inventory-service";
+import { Category, Product } from "@/lib/types/database";
 import { formatCurrency } from "@/lib/utils";
 
 import { Button } from "@/components/ui/button";

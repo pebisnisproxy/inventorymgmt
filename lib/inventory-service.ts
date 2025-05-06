@@ -1,65 +1,26 @@
 // Import the Tauri SQL plugin
 import Database from "@tauri-apps/plugin-sql";
 
-// Define types for database entities
-export interface Category {
-  id?: number;
-  name: string;
-  created_at?: string;
-  updated_at?: string;
-}
-
-export interface Product {
-  id?: number;
-  name: string;
-  category_id: number | null;
-  image_path?: string;
-  selling_price: number;
-  created_at?: string;
-  updated_at?: string;
-}
-
-export interface ProductVariant {
-  id?: number;
-  product_id: number;
-  handle: string;
-  barcode?: string;
-  created_at?: string;
-  updated_at?: string;
-}
-
-export interface InventoryMovement {
-  id?: number;
-  movement_type: "IN" | "OUT" | "RETURN";
-  movement_date?: string;
-  notes?: string;
-}
-
-export interface InventoryMovementItem {
-  id?: number;
-  movement_id: number;
-  product_variant_id: number;
-  quantity: number;
-  price_per_unit: number;
-  total_price: number;
-  created_at?: string;
-}
-
-export interface StockLevel {
-  product_variant_id: number;
-  quantity: number;
-  last_updated?: string;
-  product_name?: string;
-  handle?: string;
-  barcode?: string;
-}
+import {
+  Category,
+  InventoryMovement,
+  InventoryMovementItem,
+  InventoryValuation,
+  MovementHistory,
+  MovementWithItems,
+  Product,
+  ProductVariant,
+  ProductVariantWithProduct,
+  ProductWithCategory,
+  StockLevel
+} from "./types/database";
 
 /**
  * The main service class for inventory management
  */
 export class InventoryService {
-  private db: Database | null = null;
   private static instance: InventoryService | null = null;
+  private db: Database | null = null;
 
   private constructor() {}
 
@@ -110,14 +71,9 @@ export class InventoryService {
    */
   public async getAllCategories(): Promise<Category[]> {
     if (!this.db) throw new Error("Database not initialized");
-    try {
-      return await this.db.select<Category[]>(
-        "SELECT * FROM categories ORDER BY name"
-      );
-    } catch (error) {
-      console.error("Failed to get categories:", error);
-      throw error;
-    }
+    return await this.db.select<Category[]>(
+      "SELECT * FROM categories ORDER BY name"
+    );
   }
 
   /**
@@ -140,18 +96,14 @@ export class InventoryService {
   /**
    * Create a new category
    */
-  public async createCategory(category: Category): Promise<number | undefined> {
+  public async createCategory(name: string): Promise<number> {
     if (!this.db) throw new Error("Database not initialized");
-    try {
-      const result = await this.db.execute(
-        "INSERT INTO categories (name) VALUES (?) RETURNING id",
-        [category.name]
-      );
-      return result.lastInsertId;
-    } catch (error) {
-      console.error("Failed to create category:", error);
-      throw error;
-    }
+    const result = await this.db.execute(
+      "INSERT INTO categories (name) VALUES (?) RETURNING id",
+      [name]
+    );
+    if (!result.lastInsertId) throw new Error("Failed to create category");
+    return result.lastInsertId;
   }
 
   /**
@@ -189,19 +141,14 @@ export class InventoryService {
   /**
    * Get all products
    */
-  public async getAllProducts(): Promise<Product[]> {
+  public async getAllProducts(): Promise<ProductWithCategory[]> {
     if (!this.db) throw new Error("Database not initialized");
-    try {
-      return await this.db.select<Product[]>(`
-        SELECT p.*, c.name as category_name
-        FROM products p
-        LEFT JOIN categories c ON p.category_id = c.id
-        ORDER BY p.name
-      `);
-    } catch (error) {
-      console.error("Failed to get products:", error);
-      throw error;
-    }
+    return await this.db.select<ProductWithCategory[]>(`
+      SELECT p.*, c.name as category_name
+      FROM products p
+      LEFT JOIN categories c ON p.category_id = c.id
+      ORDER BY p.name
+    `);
   }
 
   /**
@@ -243,29 +190,29 @@ export class InventoryService {
   /**
    * Create a new product
    */
-  public async createProduct(product: Product): Promise<number | undefined> {
+  public async createProduct(
+    product: Omit<Product, "id" | "created_at" | "updated_at">
+  ): Promise<number> {
     if (!this.db) throw new Error("Database not initialized");
-    try {
-      const result = await this.db.execute(
-        "INSERT INTO products (name, category_id, image_path, selling_price) VALUES (?, ?, ?, ?) RETURNING id",
-        [
-          product.name,
-          product.category_id,
-          product.image_path,
-          product.selling_price
-        ]
-      );
-      return result.lastInsertId;
-    } catch (error) {
-      console.error("Failed to create product:", error);
-      throw error;
-    }
+    const result = await this.db.execute(
+      "INSERT INTO products (name, category_id, image_path, selling_price) VALUES (?, ?, ?, ?) RETURNING id",
+      [
+        product.name,
+        product.category_id,
+        product.image_path,
+        product.selling_price
+      ]
+    );
+    if (!result.lastInsertId) throw new Error("Failed to create product");
+    return result.lastInsertId;
   }
 
   /**
    * Update an existing product
    */
-  public async updateProduct(product: Product): Promise<void> {
+  public async updateProduct(
+    product: Omit<Product, "created_at" | "updated_at">
+  ): Promise<void> {
     if (!this.db) throw new Error("Database not initialized");
     if (!product.id) throw new Error("Product ID is required");
 
@@ -305,20 +252,17 @@ export class InventoryService {
    */
   public async getProductVariants(
     productId: number
-  ): Promise<ProductVariant[]> {
+  ): Promise<ProductVariantWithProduct[]> {
     if (!this.db) throw new Error("Database not initialized");
-    try {
-      return await this.db.select<ProductVariant[]>(
-        "SELECT * FROM product_variants WHERE product_id = ?",
-        [productId]
-      );
-    } catch (error) {
-      console.error(
-        `Failed to get variants for product ID ${productId}:`,
-        error
-      );
-      throw error;
-    }
+    return await this.db.select<ProductVariantWithProduct[]>(
+      `
+      SELECT v.*, p.name as product_name, p.selling_price
+      FROM product_variants v
+      JOIN products p ON v.product_id = p.id
+      WHERE v.product_id = ?
+    `,
+      [productId]
+    );
   }
 
   /**
@@ -342,19 +286,16 @@ export class InventoryService {
    * Create a new product variant
    */
   public async createProductVariant(
-    variant: ProductVariant
-  ): Promise<number | undefined> {
+    variant: Omit<ProductVariant, "id" | "created_at" | "updated_at">
+  ): Promise<number> {
     if (!this.db) throw new Error("Database not initialized");
-    try {
-      const result = await this.db.execute(
-        "INSERT INTO product_variants (product_id, handle, barcode) VALUES (?, ?, ?) RETURNING id",
-        [variant.product_id, variant.handle, variant.barcode]
-      );
-      return result.lastInsertId;
-    } catch (error) {
-      console.error("Failed to create product variant:", error);
-      throw error;
-    }
+    const result = await this.db.execute(
+      "INSERT INTO product_variants (product_id, handle, barcode) VALUES (?, ?, ?) RETURNING id",
+      [variant.product_id, variant.handle, variant.barcode]
+    );
+    if (!result.lastInsertId)
+      throw new Error("Failed to create product variant");
+    return result.lastInsertId;
   }
 
   /**
@@ -393,29 +334,22 @@ export class InventoryService {
    * Record a new inventory movement with its items
    */
   public async createInventoryMovement(
-    movement: InventoryMovement,
+    movement: Omit<InventoryMovement, "id" | "movement_date">,
     items: Omit<InventoryMovementItem, "id" | "movement_id" | "created_at">[]
-  ): Promise<number | undefined> {
+  ): Promise<number> {
     if (!this.db) throw new Error("Database not initialized");
 
+    await this.db.execute("BEGIN TRANSACTION");
     try {
-      // Start a transaction
-      await this.db.execute("BEGIN TRANSACTION");
-
-      // Insert the movement record
       const movementResult = await this.db.execute(
-        "INSERT INTO inventory_movements (movement_type, movement_date, notes) VALUES (?, ?, ?) RETURNING id",
-        [movement.movement_type, movement.movement_date || null, movement.notes]
+        "INSERT INTO inventory_movements (movement_type, notes) VALUES (?, ?) RETURNING id",
+        [movement.movement_type, movement.notes]
       );
-
+      if (!movementResult.lastInsertId)
+        throw new Error("Failed to create inventory movement");
       const movementId = movementResult.lastInsertId;
 
-      // Insert all movement items
       for (const item of items) {
-        // Calculate total price if not provided
-        const totalPrice =
-          item.total_price || item.price_per_unit * item.quantity;
-
         await this.db.execute(
           "INSERT INTO inventory_movement_items (movement_id, product_variant_id, quantity, price_per_unit, total_price) VALUES (?, ?, ?, ?, ?)",
           [
@@ -423,21 +357,15 @@ export class InventoryService {
             item.product_variant_id,
             item.quantity,
             item.price_per_unit,
-            totalPrice
+            item.total_price
           ]
         );
       }
 
-      // Commit the transaction
       await this.db.execute("COMMIT");
-
       return movementId;
     } catch (error) {
-      // Rollback the transaction on error
-      if (this.db) {
-        await this.db.execute("ROLLBACK");
-      }
-      console.error("Failed to create inventory movement:", error);
+      await this.db.execute("ROLLBACK");
       throw error;
     }
   }
@@ -451,33 +379,33 @@ export class InventoryService {
     endDate?: string
   ): Promise<InventoryMovement[]> {
     if (!this.db) throw new Error("Database not initialized");
+    let query = "SELECT * FROM inventory_movements";
+    const params: (string | number)[] = [];
 
-    try {
-      let query = "SELECT * FROM inventory_movements WHERE 1=1";
-      const params: any[] = [];
+    if (type || startDate || endDate) {
+      query += " WHERE";
+      const conditions: string[] = [];
 
       if (type) {
-        query += " AND movement_type = ?";
+        conditions.push(" movement_type = ?");
         params.push(type);
       }
 
       if (startDate) {
-        query += " AND movement_date >= ?";
+        conditions.push(" movement_date >= ?");
         params.push(startDate);
       }
 
       if (endDate) {
-        query += " AND movement_date <= ?";
+        conditions.push(" movement_date <= ?");
         params.push(endDate);
       }
 
-      query += " ORDER BY movement_date DESC";
-
-      return await this.db.select<InventoryMovement[]>(query, params);
-    } catch (error) {
-      console.error("Failed to get inventory movements:", error);
-      throw error;
+      query += conditions.join(" AND");
     }
+
+    query += " ORDER BY movement_date DESC";
+    return await this.db.select<InventoryMovement[]>(query, params);
   }
 
   /**
@@ -504,12 +432,28 @@ export class InventoryService {
   /**
    * Get detailed movement items with product information
    */
-  public async getDetailedMovementItems(movementId: number): Promise<any[]> {
+  public async getDetailedMovementItems(movementId: number): Promise<
+    Array<
+      InventoryMovementItem & {
+        product_name: string;
+        handle: string;
+        barcode: string | null;
+      }
+    >
+  > {
     if (!this.db) throw new Error("Database not initialized");
     try {
-      return await this.db.select<any[]>(
+      return await this.db.select<
+        Array<
+          InventoryMovementItem & {
+            product_name: string;
+            handle: string;
+            barcode: string | null;
+          }
+        >
+      >(
         `
-        SELECT
+        SELECT 
           i.*,
           p.name as product_name,
           v.handle,
@@ -530,30 +474,57 @@ export class InventoryService {
     }
   }
 
+  public async getMovementWithItems(
+    movementId: number
+  ): Promise<MovementWithItems | null> {
+    if (!this.db) throw new Error("Database not initialized");
+    const movements = await this.db.select<MovementWithItems[]>(
+      `
+      SELECT 
+        m.*,
+        json_group_array(json_object(
+          'id', i.id,
+          'movement_id', i.movement_id,
+          'product_variant_id', i.product_variant_id,
+          'quantity', i.quantity,
+          'price_per_unit', i.price_per_unit,
+          'total_price', i.total_price,
+          'created_at', i.created_at,
+          'product_name', p.name,
+          'handle', v.handle,
+          'barcode', v.barcode
+        )) as items
+      FROM inventory_movements m
+      LEFT JOIN inventory_movement_items i ON m.id = i.movement_id
+      LEFT JOIN product_variants v ON i.product_variant_id = v.id
+      LEFT JOIN products p ON v.product_id = p.id
+      WHERE m.id = ?
+      GROUP BY m.id
+    `,
+      [movementId]
+    );
+    return movements[0] || null;
+  }
+
   // Stock levels operations
   /**
    * Get current stock levels for all product variants
    */
   public async getAllStockLevels(): Promise<StockLevel[]> {
     if (!this.db) throw new Error("Database not initialized");
-    try {
-      return await this.db.select<StockLevel[]>(`
-        SELECT
-          s.product_variant_id,
-          s.quantity,
-          s.last_updated,
-          p.name as product_name,
-          v.handle,
-          v.barcode
-        FROM inventory_stock s
-        JOIN product_variants v ON s.product_variant_id = v.id
-        JOIN products p ON v.product_id = p.id
-        ORDER BY p.name, v.handle
-      `);
-    } catch (error) {
-      console.error("Failed to get stock levels:", error);
-      throw error;
-    }
+    return await this.db.select<StockLevel[]>(`
+      SELECT 
+        s.product_variant_id,
+        s.quantity,
+        s.last_updated,
+        p.name as product_name,
+        v.handle,
+        v.barcode
+      FROM inventory_stock s
+      JOIN product_variants v ON s.product_variant_id = v.id
+      JOIN products p ON v.product_id = p.id
+      ORDER BY p.name, v.handle
+    `);
   }
 
   /**
@@ -668,8 +639,8 @@ export class InventoryService {
     if (!this.db) throw new Error("Database not initialized");
     try {
       await this.db.execute(
-        "INSERT INTO inventory_stock (product_variant_id, quantity) VALUES (?, ?) ON CONFLICT(product_variant_id) DO UPDATE SET quantity = ?, last_updated = CURRENT_TIMESTAMP",
-        [variantId, newQuantity, newQuantity]
+        "UPDATE inventory_stock SET quantity = ?, last_updated = CURRENT_TIMESTAMP WHERE product_variant_id = ?",
+        [newQuantity, variantId]
       );
     } catch (error) {
       console.error(
@@ -683,60 +654,49 @@ export class InventoryService {
   /**
    * Generate inventory valuation report
    */
-  public async getInventoryValuation(): Promise<any[]> {
+  public async getInventoryValuation(): Promise<InventoryValuation[]> {
     if (!this.db) throw new Error("Database not initialized");
-    try {
-      return await this.db.select<any[]>(`
-        SELECT
-          p.id as product_id,
-          p.name as product_name,
-          v.id as variant_id,
-          v.handle,
-          v.barcode,
-          s.quantity,
-          p.selling_price,
-          (s.quantity * p.selling_price) as total_value
-        FROM inventory_stock s
-        JOIN product_variants v ON s.product_variant_id = v.id
-        JOIN products p ON v.product_id = p.id
-        WHERE s.quantity > 0
-        ORDER BY total_value DESC
-      `);
-    } catch (error) {
-      console.error("Failed to generate inventory valuation report:", error);
-      throw error;
-    }
+    return await this.db.select<InventoryValuation[]>(`
+      SELECT 
+        p.id as product_id,
+        p.name as product_name,
+        v.id as variant_id,
+        v.handle,
+        v.barcode,
+        s.quantity,
+        p.selling_price,
+        (s.quantity * p.selling_price) as total_value
+      FROM inventory_stock s
+      JOIN product_variants v ON s.product_variant_id = v.id
+      JOIN products p ON v.product_id = p.id
+      WHERE s.quantity > 0
+      ORDER BY total_value DESC
+    `);
   }
 
   /**
    * Generate movement history report for a specific product variant
    */
-  public async getVariantMovementHistory(variantId: number): Promise<any[]> {
+  public async getVariantMovementHistory(
+    variantId: number
+  ): Promise<MovementHistory[]> {
     if (!this.db) throw new Error("Database not initialized");
-    try {
-      return await this.db.select<any[]>(
-        `
-        SELECT
-          m.movement_type,
-          m.movement_date,
-          i.quantity,
-          i.price_per_unit,
-          i.total_price,
-          m.notes
-        FROM inventory_movement_items i
-        JOIN inventory_movements m ON i.movement_id = m.id
-        WHERE i.product_variant_id = ?
-        ORDER BY m.movement_date DESC
-      `,
-        [variantId]
-      );
-    } catch (error) {
-      console.error(
-        `Failed to get movement history for variant ID ${variantId}:`,
-        error
-      );
-      throw error;
-    }
+    return await this.db.select<MovementHistory[]>(
+      `
+      SELECT 
+        m.movement_type,
+        m.movement_date,
+        i.quantity,
+        i.price_per_unit,
+        i.total_price,
+        m.notes
+      FROM inventory_movement_items i
+      JOIN inventory_movements m ON i.movement_id = m.id
+      WHERE i.product_variant_id = ?
+      ORDER BY m.movement_date DESC
+    `,
+      [variantId]
+    );
   }
 }
 

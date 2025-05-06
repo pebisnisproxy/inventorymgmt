@@ -1,7 +1,7 @@
 use anyhow::Result;
-use barcoders::generators::svg::*;
 use barcoders::generators::image::*;
 use barcoders::generators::json::*;
+use barcoders::generators::svg::*;
 use barcoders::sym::code39::Code39;
 use serde::{Deserialize, Serialize};
 use tokio::fs::File;
@@ -9,8 +9,8 @@ use tokio::io::{AsyncWriteExt, BufWriter};
 
 #[derive(Debug, Serialize, Deserialize)]
 pub struct Barcode {
-    pub height: u32,    // Changed from u8 to u32 for larger height values
-    pub xdim: u32,      // Changed from u8 to u32
+    pub height: u32, // Changed from u8 to u32 for larger height values
+    pub xdim: u32,   // Changed from u8 to u32
     pub encoding: Vec<u8>,
 }
 

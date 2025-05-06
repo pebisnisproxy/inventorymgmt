@@ -15,7 +15,8 @@ import { usePathname, useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 import { toast } from "sonner";
 
-import { Category, InventoryService, Product } from "@/lib/inventory-service";
+import { InventoryService } from "@/lib/inventory-service";
+import { Category, Product } from "@/lib/types/database";
 import { cn } from "@/lib/utils";
 
 import { Button } from "@/components/ui/button";
@@ -244,7 +245,9 @@ export default function AppDashboard({
                       "w-full justify-start",
                       isMobile && "justify-center h-8"
                     )}
-                    variant="outline"
+                    variant={
+                      pathname === navigation.href ? "default" : "outline"
+                    }
                     asChild
                     title={navigation.name}
                   >
@@ -307,6 +310,9 @@ export default function AppDashboard({
             children
           )}
         </main>
+        <footer className="absolute bottom-0 right-0 p-2 text-xs text-muted-foreground">
+          inventorymgmt-v2.0.0 &copy; 2025 lichtlabs
+        </footer>
       </ResizablePanel>
     </ResizablePanelGroup>
   );

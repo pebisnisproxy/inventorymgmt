@@ -12,7 +12,8 @@ import {
   YAxis
 } from "recharts";
 
-import { InventoryService, Product } from "@/lib/inventory-service";
+import { InventoryService } from "@/lib/inventory-service";
+import { Product } from "@/lib/types/database";
 import { formatCurrency } from "@/lib/utils";
 
 import { StatsCard } from "@/components/stats-card";
