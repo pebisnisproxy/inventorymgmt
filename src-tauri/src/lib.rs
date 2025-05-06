@@ -30,7 +30,7 @@ impl AppState {
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
     dotenv::dotenv().ok();
-    let cfg = config::AppConfig::new().expect("Failed to load config");
+    let cfg = config::AppConfig::new();
     let cfg_clone = cfg.clone();
 
     let sql_plugin = tauri_plugin_sql::Builder::new()

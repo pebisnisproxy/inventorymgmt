@@ -172,10 +172,10 @@ export default function AppDashboard({
   }
 
   return (
-    <ResizablePanelGroup direction="horizontal" className="w-full min-h-screen">
+    <ResizablePanelGroup direction="horizontal" className="w-full">
       <ResizablePanel
-        defaultSize={isMobile ? 8 : 24}
-        minSize={isMobile ? 8 : 24}
+        defaultSize={isMobile ? 8 : 22}
+        minSize={isMobile ? 8 : 22}
         maxSize={isMobile ? 8 : 32}
         className={cn("p-4", isMobile && "p-2")}
       >
@@ -298,7 +298,7 @@ export default function AppDashboard({
             </Button>
           </div>
         </header>
-        <main className={cn("p-4", isMobile && "p-2")}>
+        <main className={cn("p-4 overflow-y-scroll h-max", isMobile && "p-2")}>
           {isLoading ? (
             <div className="flex items-center justify-center h-full">
               <div className="text-center">
@@ -310,9 +310,6 @@ export default function AppDashboard({
             children
           )}
         </main>
-        <footer className="absolute bottom-0 right-0 p-2 text-xs text-muted-foreground">
-          inventorymgmt-v2.0.0 &copy; 2025 lichtlabs
-        </footer>
       </ResizablePanel>
     </ResizablePanelGroup>
   );

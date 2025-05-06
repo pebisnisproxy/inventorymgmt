@@ -5,11 +5,16 @@ pub struct AppConfig {
     pub db_path: String,
 }
 
-impl AppConfig {
-    pub fn new() -> Result<Self, String> {
-        let cfg =
-            envy::from_env::<AppConfig>().map_err(|e| format!("Failed to load config: {}", e))?;
+impl Default for AppConfig {
+    fn default() -> Self {
+        AppConfig {
+            db_path: "inventory.db".to_string(),
+        }
+    }
+}
 
-        Ok(cfg)
+impl AppConfig {
+    pub fn new() -> Self {
+        envy::from_env::<AppConfig>().unwrap_or_default()
     }
 }
