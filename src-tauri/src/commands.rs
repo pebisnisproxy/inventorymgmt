@@ -11,6 +11,7 @@ pub struct GenerateBarcodeData {
 #[tauri::command(async)]
 pub async fn generate_barcode(
     product_name: String,
+    _variant_name: String,
     app_handle: AppHandle,
 ) -> Result<GenerateBarcodeData, String> {
     let dir = app_handle
@@ -26,6 +27,14 @@ pub async fn generate_barcode(
         file_path: save_path.to_str().unwrap().to_string(),
         barcode,
     };
+
+    // bm.save_as_svg_with_label(
+    //     &save_path.to_str().unwrap().to_string(),
+    //     &product_name,
+    //     &variant_name,
+    // )
+    // .await
+    // .map_err(|err| err.to_string())?;
 
     Ok(data)
 }

@@ -101,6 +101,7 @@ export default function AddProductPage() {
         image_path: "" // Default empty image path
       });
       toast.success("Produk berhasil ditambahkan");
+      router.refresh();
       router.push("/p");
     } catch (error) {
       toast.error("Gagal menambahkan produk");

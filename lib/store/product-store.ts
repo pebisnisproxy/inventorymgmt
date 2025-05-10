@@ -2,7 +2,7 @@ import { create } from "zustand";
 
 import { InventoryManager } from "../inventory-manager";
 import { InventoryService } from "../inventory-service";
-import { Product } from "../types/database";
+import type { Product } from "../types/database";
 
 interface ProductState {
   products: Product[];

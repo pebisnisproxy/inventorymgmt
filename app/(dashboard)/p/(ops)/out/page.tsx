@@ -3,6 +3,15 @@
 import { useEffect, useState } from "react";
 import { toast } from "sonner";
 
+import { InventoryManager } from "@/lib/inventory-manager";
+import inventoryService from "@/lib/inventory-service";
+import {
+  InventoryMovement,
+  InventoryMovementItem,
+  ProductVariantWithProduct,
+  ProductWithCategory
+} from "@/lib/types/database";
+
 import {
   Table,
   TableBody,
@@ -14,41 +23,45 @@ import {
   TableRow
 } from "@/components/ui/table";
 
-interface Invoice {
-  invoice: string;
-  paymentStatus: string;
-  totalAmount: string;
-  paymentMethod: string;
+interface MovementWithItems extends InventoryMovement {
+  items: Array<
+    InventoryMovementItem & {
+      product_name: string;
+      handle: string;
+      barcode: string | null;
+    }
+  >;
 }
 
 export default function ProductOutPage() {
-  const [invoices, setInvoices] = useState<Invoice[]>([]);
+  const [movements, setMovements] = useState<MovementWithItems[]>([]);
   const [isLoading, setIsLoading] = useState(true);
+  const [products, setProducts] = useState<ProductWithCategory[]>([]);
+  const [variants, setVariants] = useState<ProductVariantWithProduct[]>([]);
+  const [selectedProductId, setSelectedProductId] = useState<number | null>(
+    null
+  );
+  const [selectedVariantId, setSelectedVariantId] = useState<number | null>(
+    null
+  );
+  const [quantity, setQuantity] = useState(1);
+  const [sellingPrice, setSellingPrice] = useState(0);
+  const [notes, setNotes] = useState("");
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
-  const loadData = async () => {
+  async function loadData() {
     try {
-      // TODO: Implement actual data fetching
-      const mockData = [
-        {
-          invoice: "INV001",
-          paymentStatus: "Paid",
-          totalAmount: "$250.00",
-          paymentMethod: "Credit Card"
-        },
-        {
-          invoice: "INV002",
-          paymentStatus: "Pending",
-          totalAmount: "$150.00",
-          paymentMethod: "PayPal"
-        },
-        {
-          invoice: "INV003",
-          paymentStatus: "Unpaid",
-          totalAmount: "$350.00",
-          paymentMethod: "Bank Transfer"
-        }
-      ];
-      setInvoices(mockData);
+      await InventoryManager.initialize();
+      const movementList = await inventoryService.getInventoryMovements("OUT");
+      const detailedMovements: MovementWithItems[] = [];
+      for (let i = 0; i < movementList.length; i++) {
+        const movement = movementList[i];
+        const items = await inventoryService.getDetailedMovementItems(
+          movement.id
+        );
+        detailedMovements.push({ ...movement, items });
+      }
+      setMovements(detailedMovements);
     } catch (error) {
       console.error("Gagal memuat data:", error);
       toast.error("Gagal memuat data produk keluar", {
@@ -57,11 +70,92 @@ export default function ProductOutPage() {
     } finally {
       setIsLoading(false);
     }
-  };
+  }
 
-  // biome-ignore lint/correctness/useExhaustiveDependencies: <explanation>
-  useEffect(() => {
+  async function loadProducts() {
+    try {
+      await InventoryManager.initialize();
+      const productList = await inventoryService.getAllProducts();
+      setProducts(productList);
+    } catch (error) {
+      toast.error("Gagal memuat produk");
+    }
+  }
+
+  async function loadVariants(productId: number) {
+    try {
+      await InventoryManager.initialize();
+      const variantList = await inventoryService.getProductVariants(productId);
+      setVariants(variantList);
+    } catch (error) {
+      toast.error("Gagal memuat varian produk");
+    }
+  }
+
+  function handleProductChange(event: React.ChangeEvent<HTMLSelectElement>) {
+    const productId = Number(event.target.value);
+    setSelectedProductId(productId);
+    setSelectedVariantId(null);
+    setVariants([]);
+    if (productId) {
+      loadVariants(productId);
+    }
+  }
+
+  function handleVariantChange(event: React.ChangeEvent<HTMLSelectElement>) {
+    setSelectedVariantId(Number(event.target.value));
+  }
+
+  function handleQuantityChange(event: React.ChangeEvent<HTMLInputElement>) {
+    setQuantity(Number(event.target.value));
+  }
+
+  function handleSellingPriceChange(
+    event: React.ChangeEvent<HTMLInputElement>
+  ) {
+    setSellingPrice(Number(event.target.value));
+  }
+
+  function handleNotesChange(event: React.ChangeEvent<HTMLInputElement>) {
+    setNotes(event.target.value);
+  }
+
+  async function handleSubmit(event: React.FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    if (!selectedVariantId || quantity <= 0 || sellingPrice <= 0) {
+      toast.error("Lengkapi data produk, varian, jumlah, dan harga jual.");
+      return;
+    }
+    setIsSubmitting(true);
+    try {
+      await InventoryManager.recordSale(
+        [
+          {
+            variantId: selectedVariantId,
+            quantity: quantity,
+            sellingPrice: sellingPrice
+          }
+        ],
+        notes
+      );
+      toast.success("Transaksi produk keluar berhasil direkam.");
+      setSelectedProductId(null);
+      setSelectedVariantId(null);
+      setQuantity(1);
+      setSellingPrice(0);
+      setNotes("");
+      setVariants([]);
+      await loadData();
+    } catch (error) {
+      toast.error("Gagal merekam transaksi produk keluar.");
+    } finally {
+      setIsSubmitting(false);
+    }
+  }
+
+  useEffect(function () {
     loadData();
+    loadProducts();
   }, []);
 
   if (isLoading) {
@@ -78,43 +172,112 @@ export default function ProductOutPage() {
   return (
     <div className="space-y-12">
       <div className="flex items-center justify-between">
-        <h1 className="font-bold text-lg">Scan Produk Keluar</h1>
+        <h1 className="font-bold text-lg">Histori Produk Keluar</h1>
       </div>
+      <form className="mb-8 space-y-4" onSubmit={handleSubmit}>
+        <div className="flex gap-4">
+          <select
+            className="border rounded px-2 py-1"
+            value={selectedProductId || ""}
+            onChange={handleProductChange}
+            required
+          >
+            <option value="">Pilih Produk</option>
+            {products.map(function (product) {
+              return (
+                <option key={product.id} value={product.id}>
+                  {product.name}
+                </option>
+              );
+            })}
+          </select>
+          <select
+            className="border rounded px-2 py-1"
+            value={selectedVariantId || ""}
+            onChange={handleVariantChange}
+            required
+            disabled={!selectedProductId}
+          >
+            <option value="">Pilih Varian</option>
+            {variants.map(function (variant) {
+              return (
+                <option key={variant.id} value={variant.id}>
+                  {variant.handle}{" "}
+                  {variant.barcode ? `(${variant.barcode})` : ""}
+                </option>
+              );
+            })}
+          </select>
+          <input
+            type="number"
+            className="border rounded px-2 py-1 w-24"
+            min={1}
+            value={quantity}
+            onChange={handleQuantityChange}
+            placeholder="Jumlah"
+            required
+          />
+          <input
+            type="number"
+            className="border rounded px-2 py-1 w-32"
+            min={0}
+            value={sellingPrice}
+            onChange={handleSellingPriceChange}
+            placeholder="Harga Jual"
+            required
+          />
+          <input
+            type="text"
+            className="border rounded px-2 py-1 flex-1"
+            value={notes}
+            onChange={handleNotesChange}
+            placeholder="Catatan (opsional)"
+          />
+          <button
+            type="submit"
+            className="bg-blue-600 text-white px-4 py-1 rounded disabled:opacity-50"
+            disabled={isSubmitting}
+          >
+            {isSubmitting ? "Menyimpan..." : "Rekam Keluar"}
+          </button>
+        </div>
+      </form>
       <Table>
         <TableCaption>Histori barang yang keluar.</TableCaption>
         <TableHeader>
           <TableRow>
-            <TableHead className="w-[100px]">Invoice</TableHead>
-            <TableHead>Status</TableHead>
-            <TableHead>Method</TableHead>
-            <TableHead className="text-right">Amount</TableHead>
+            <TableHead className="w-[100px]">Tanggal</TableHead>
+            <TableHead>Invoice ID</TableHead>
+            <TableHead>Catatan</TableHead>
+            <TableHead>Produk</TableHead>
+            <TableHead>Jumlah</TableHead>
+            <TableHead>Harga Satuan</TableHead>
+            <TableHead>Total</TableHead>
           </TableRow>
         </TableHeader>
         <TableBody>
-          {invoices.map((invoice) => (
-            <TableRow key={invoice.invoice}>
-              <TableCell className="font-medium">{invoice.invoice}</TableCell>
-              <TableCell>{invoice.paymentStatus}</TableCell>
-              <TableCell>{invoice.paymentMethod}</TableCell>
-              <TableCell className="text-right">
-                {invoice.totalAmount}
-              </TableCell>
-            </TableRow>
-          ))}
+          {movements.map(function (movement) {
+            return movement.items.map(function (item, idx) {
+              return (
+                <TableRow key={movement.id + "-" + idx}>
+                  <TableCell>{movement.movement_date}</TableCell>
+                  <TableCell>{movement.id}</TableCell>
+                  <TableCell>{movement.notes}</TableCell>
+                  <TableCell>
+                    {item.product_name} ({item.handle})
+                  </TableCell>
+                  <TableCell>{item.quantity}</TableCell>
+                  <TableCell>{item.price_per_unit}</TableCell>
+                  <TableCell>{item.total_price}</TableCell>
+                </TableRow>
+              );
+            });
+          })}
         </TableBody>
         <TableFooter>
           <TableRow>
-            <TableCell colSpan={3}>Total</TableCell>
-            <TableCell className="text-right">
-              $
-              {invoices
-                .reduce(
-                  (sum, inv) =>
-                    sum + Number.parseFloat(inv.totalAmount.replace("$", "")),
-                  0
-                )
-                .toFixed(2)}
-            </TableCell>
+            <TableCell colSpan={6}>Total Transaksi</TableCell>
+            <TableCell className="text-right">{movements.length}</TableCell>
           </TableRow>
         </TableFooter>
       </Table>

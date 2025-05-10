@@ -16,6 +16,7 @@ import { useEffect, useState } from "react";
 import { toast } from "sonner";
 
 import { InventoryService } from "@/lib/inventory-service";
+import { useProductStore } from "@/lib/store/product-store";
 import { Category, Product } from "@/lib/types/database";
 import { cn } from "@/lib/utils";
 
@@ -70,13 +71,14 @@ export default function AppDashboard({
 }) {
   const router = useRouter();
   const pathname = usePathname();
-  const [products, setProducts] = useState<Product[]>([]);
   const [categories, setCategories] = useState<Category[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [isRefreshing, setIsRefreshing] = useState(false);
   const [isMobile, setIsMobile] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [selectedValue, setSelectedValue] = useState<string>("");
+
+  const { products, fetchProducts } = useProductStore();
 
   useEffect(() => {
     const checkMobile = () => {
@@ -103,12 +105,8 @@ export default function AppDashboard({
 
       // Tunggu sebentar untuk memastikan database siap
       await new Promise((resolve) => setTimeout(resolve, 100));
-
-      const [productsData, categoriesData] = await Promise.all([
-        service.getAllProducts(),
-        service.getAllCategories()
-      ]);
-      setProducts(productsData);
+      const categoriesData = await service.getAllCategories();
+      fetchProducts();
       setCategories(categoriesData);
       setError(null);
     } catch (error) {
