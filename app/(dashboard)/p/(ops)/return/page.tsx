@@ -59,6 +59,7 @@ export default function ProductReturnPage() {
     }
   };
 
+  // biome-ignore lint/correctness/useExhaustiveDependencies: <explanation>
   useEffect(() => {
     loadData();
   }, []);
@@ -109,7 +110,7 @@ export default function ProductReturnPage() {
               {invoices
                 .reduce(
                   (sum, inv) =>
-                    sum + parseFloat(inv.totalAmount.replace("$", "")),
+                    sum + Number.parseFloat(inv.totalAmount.replace("$", "")),
                   0
                 )
                 .toFixed(2)}

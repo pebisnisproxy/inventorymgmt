@@ -49,7 +49,6 @@ export default function ProductOutPage() {
         }
       ];
       setInvoices(mockData);
-      toast.success("Data produk keluar berhasil dimuat");
     } catch (error) {
       console.error("Gagal memuat data:", error);
       toast.error("Gagal memuat data produk keluar", {
@@ -60,6 +59,7 @@ export default function ProductOutPage() {
     }
   };
 
+  // biome-ignore lint/correctness/useExhaustiveDependencies: <explanation>
   useEffect(() => {
     loadData();
   }, []);
@@ -110,7 +110,7 @@ export default function ProductOutPage() {
               {invoices
                 .reduce(
                   (sum, inv) =>
-                    sum + parseFloat(inv.totalAmount.replace("$", "")),
+                    sum + Number.parseFloat(inv.totalAmount.replace("$", "")),
                   0
                 )
                 .toFixed(2)}
