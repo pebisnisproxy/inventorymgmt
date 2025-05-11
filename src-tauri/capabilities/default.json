@@ -11,6 +11,7 @@
     "sql:allow-execute",
     "log:default",
     "fs:default",
-    "dialog:default"
+    "dialog:default",
+    "opener:default"
   ]
 }

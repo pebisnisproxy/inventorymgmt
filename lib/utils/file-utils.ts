@@ -107,7 +107,8 @@ export async function pickAndSaveImage(
     const sanitizedProductName = sanitizeForPath(productName);
     const sanitizedVariantHandle = sanitizeForPath(variantHandle);
 
-    const imgDir = `${dataDir}org.lichtlabs.inventorymgmt/images/${sanitizedProductName}/${sanitizedVariantHandle}`;
+    const imgDir = `${dataDir}/images/${sanitizedProductName}/${sanitizedVariantHandle}`;
+    console.log(`Creating directory: ${imgDir}`);
 
     // Create directories if they don't exist
     await mkdir(imgDir, { recursive: true });
