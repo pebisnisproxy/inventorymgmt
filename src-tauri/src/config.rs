@@ -8,7 +8,7 @@ pub struct AppConfig {
 impl Default for AppConfig {
     fn default() -> Self {
         AppConfig {
-            db_path: "inventory.db".to_string(),
+            db_path: "inventory-dev.db".to_string(),
         }
     }
 }

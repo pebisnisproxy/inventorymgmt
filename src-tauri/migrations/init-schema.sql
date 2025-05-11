@@ -31,7 +31,8 @@ CREATE TABLE IF NOT EXISTS product_variants (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
     product_id INTEGER NOT NULL,
     handle TEXT NOT NULL,  -- This appears to be the variant number/identifier (31, 32, 33, etc.)
-    barcode TEXT,
+    barcode JSONB,
+    barcode_path TEXT,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     FOREIGN KEY (product_id) REFERENCES products(id) ON DELETE CASCADE

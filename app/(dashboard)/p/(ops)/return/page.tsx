@@ -1,5 +1,6 @@
 "use client";
 
+import { useSearchParams } from "next/navigation";
 import { useEffect, useState } from "react";
 import { toast } from "sonner";
 
@@ -34,6 +35,9 @@ interface MovementWithItems extends InventoryMovement {
 }
 
 export default function ProductReturnPage() {
+  const searchParams = useSearchParams();
+  const variantIdFromUrl = searchParams.get("variantId");
+
   const [movements, setMovements] = useState<MovementWithItems[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [products, setProducts] = useState<ProductWithCategory[]>([]);
@@ -92,6 +96,52 @@ export default function ProductReturnPage() {
       toast.error("Gagal memuat varian produk");
     }
   }
+
+  const loadVariantFromUrl = async (variantId: number) => {
+    try {
+      await InventoryManager.initialize();
+
+      // Get the variant details
+      const variant = await inventoryService.getVariantById(variantId);
+      if (!variant) {
+        toast.error("Variant tidak ditemukan");
+        return;
+      }
+
+      // Set the product ID
+      setSelectedProductId(variant.product_id);
+
+      // Load all variants for this product
+      await loadVariants(variant.product_id);
+
+      // Set the selected variant
+      setSelectedVariantId(variantId);
+
+      // Get the product to set the default price
+      const productVariants = await inventoryService.getProductVariants(
+        variant.product_id
+      );
+      const variantWithProduct = productVariants.find(
+        (v) => v.id === variantId
+      );
+      if (variantWithProduct) {
+        setPricePerUnit(variantWithProduct.selling_price);
+      }
+
+      // Set focus to quantity field
+      const quantityInput = document.getElementById(
+        "quantity"
+      ) as HTMLInputElement;
+      if (quantityInput) {
+        quantityInput.focus();
+      }
+
+      toast.success("Produk ditemukan, silakan isi jumlah");
+    } catch (error) {
+      console.error("Error loading variant from URL:", error);
+      toast.error("Gagal memuat data produk");
+    }
+  };
 
   function handleProductChange(event: React.ChangeEvent<HTMLSelectElement>) {
     const productId = Number(event.target.value);
@@ -158,7 +208,15 @@ export default function ProductReturnPage() {
   useEffect(() => {
     loadData();
     loadProducts();
-  }, []);
+
+    // Check if we have a variantId in the URL
+    if (variantIdFromUrl) {
+      const variantId = Number.parseInt(variantIdFromUrl, 10);
+      if (!Number.isNaN(variantId)) {
+        loadVariantFromUrl(variantId);
+      }
+    }
+  }, [variantIdFromUrl]);
 
   if (isLoading) {
     return (
@@ -206,6 +264,7 @@ export default function ProductReturnPage() {
             ))}
           </select>
           <input
+            id="quantity"
             type="number"
             className="border rounded px-2 py-1 w-24"
             min={1}

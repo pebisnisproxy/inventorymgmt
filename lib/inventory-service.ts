@@ -1,7 +1,7 @@
 // Import the Tauri SQL plugin
 import Database from "@tauri-apps/plugin-sql";
 
-import {
+import type {
   Category,
   InventoryMovement,
   InventoryMovementItem,
@@ -37,9 +37,7 @@ export class InventoryService {
   /**
    * Initialize the database connection
    */
-  public async initialize(
-    dbPath: string = "sqlite:inventory.db"
-  ): Promise<void> {
+  public async initialize(dbPath = "sqlite:inventory-dev.db"): Promise<void> {
     try {
       this.db = await Database.load(dbPath);
       console.log("Database initialized successfully");
@@ -290,8 +288,13 @@ export class InventoryService {
   ): Promise<number> {
     if (!this.db) throw new Error("Database not initialized");
     const result = await this.db.execute(
-      "INSERT INTO product_variants (product_id, handle, barcode) VALUES (?, ?, ?) RETURNING id",
-      [variant.product_id, variant.handle, variant.barcode]
+      "INSERT INTO product_variants (product_id, handle, barcode, barcode_path) VALUES (?, ?, ?, ?) RETURNING id",
+      [
+        variant.product_id,
+        variant.handle,
+        variant.barcode,
+        variant.barcode_path
+      ]
     );
     if (!result.lastInsertId)
       throw new Error("Failed to create product variant");
@@ -307,8 +310,8 @@ export class InventoryService {
 
     try {
       await this.db.execute(
-        "UPDATE product_variants SET handle = ?, barcode = ?, updated_at = CURRENT_TIMESTAMP WHERE id = ?",
-        [variant.handle, variant.barcode, variant.id]
+        "UPDATE product_variants SET handle = ?, barcode = ?, barcode_path = ?, updated_at = CURRENT_TIMESTAMP WHERE id = ?",
+        [variant.handle, variant.barcode, variant.barcode_path, variant.id]
       );
     } catch (error) {
       console.error(`Failed to update variant with ID ${variant.id}:`, error);
@@ -599,7 +602,7 @@ export class InventoryService {
   /**
    * Get low stock items (below threshold)
    */
-  public async getLowStockItems(threshold: number = 10): Promise<StockLevel[]> {
+  public async getLowStockItems(threshold = 10): Promise<StockLevel[]> {
     if (!this.db) throw new Error("Database not initialized");
     try {
       return await this.db.select<StockLevel[]>(
@@ -697,6 +700,72 @@ export class InventoryService {
     `,
       [variantId]
     );
+  }
+
+  /**
+   * Find a product variant by barcode
+   */
+  public async findProductVariantByBarcode(
+    barcode: string
+  ): Promise<ProductVariantWithProduct | null> {
+    if (!this.db) throw new Error("Database not initialized");
+    try {
+      // First check if barcode matches the barcode_path
+      let variants = await this.db.select<ProductVariantWithProduct[]>(
+        `
+        SELECT 
+          v.*,
+          p.name as product_name,
+          p.selling_price
+        FROM product_variants v
+        JOIN products p ON v.product_id = p.id
+        WHERE v.barcode_path = ?
+        LIMIT 1
+        `,
+        [barcode]
+      );
+
+      if (variants.length > 0) {
+        return variants[0];
+      }
+
+      // Then try to find by matching the barcode data content
+      // This is more complex since barcode is a JSONB field
+      variants = await this.db.select<ProductVariantWithProduct[]>(
+        `
+        SELECT 
+          v.*,
+          p.name as product_name,
+          p.selling_price
+        FROM product_variants v
+        JOIN products p ON v.product_id = p.id
+        WHERE v.barcode IS NOT NULL
+        LIMIT 50
+        `
+      );
+
+      // Since we can't easily query JSONB in SQLite, we'll filter in JS
+      // Look for variants with barcode content matching this code
+      const matchingVariant = variants.find((variant) => {
+        // Check if the barcode contains the search string
+        if (!variant.barcode) return false;
+        try {
+          // Attempt different matching strategies
+          const barcodeStr = JSON.stringify(variant.barcode);
+          return barcodeStr.includes(barcode);
+        } catch (e) {
+          return false;
+        }
+      });
+
+      return matchingVariant || null;
+    } catch (error) {
+      console.error(
+        `Failed to find product variant by barcode ${barcode}:`,
+        error
+      );
+      throw error;
+    }
   }
 }
 

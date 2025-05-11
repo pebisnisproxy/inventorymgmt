@@ -1,5 +1,5 @@
 import inventoryService from "./inventory-service";
-import {
+import type {
   InventoryMovementItem,
   InventoryValuation,
   MovementHistory,
@@ -12,12 +12,14 @@ import {
 /**
  * Higher-level business logic for inventory operations
  */
+
+// biome-ignore lint/complexity/noStaticOnlyClass: <explanation>
 export class InventoryManager {
   /**
    * Initialize the inventory manager
    */
   public static async initialize(
-    dbPath: string = "sqlite:inventory.db"
+    dbPath = "sqlite:inventory-dev.db"
   ): Promise<void> {
     await inventoryService.initialize(dbPath);
   }
@@ -173,9 +175,7 @@ export class InventoryManager {
    * @param threshold Quantity threshold for considering an item low in stock
    * @returns List of items with low stock
    */
-  public static async getLowStockItems(
-    threshold: number = 10
-  ): Promise<StockLevel[]> {
+  public static async getLowStockItems(threshold = 10): Promise<StockLevel[]> {
     return await inventoryService.getLowStockItems(threshold);
   }
 
@@ -234,7 +234,8 @@ export class InventoryManager {
       await inventoryService.createProductVariant({
         product_id: productId,
         handle: variant.handle,
-        barcode: variant.barcode
+        barcode: variant.barcode,
+        barcode_path: variant.barcode_path
       });
     }
 

@@ -9,8 +9,8 @@ import { toast } from "sonner";
 import * as z from "zod";
 
 import { InventoryService } from "@/lib/inventory-service";
-import { GenerateBarcodeData } from "@/lib/types/common";
-import {
+import type { GenerateBarcodeData } from "@/lib/types/common";
+import type {
   Category,
   Product,
   ProductVariantWithProduct
@@ -158,7 +158,7 @@ export default function ProductDetailPage() {
   // Variant form schema
   const variantFormSchema = z.object({
     handle: z.string().min(1, "Nama varian harus diisi"),
-    barcode: z.string().optional().nullable()
+    barcode_path: z.string().optional().nullable()
   });
   type VariantFormValues = z.infer<typeof variantFormSchema>;
 
@@ -166,18 +166,19 @@ export default function ProductDetailPage() {
     resolver: zodResolver(variantFormSchema),
     defaultValues: {
       handle: editingVariant ? editingVariant.handle : "",
-      barcode: editingVariant ? editingVariant.barcode : ""
+      barcode_path: editingVariant ? editingVariant.barcode_path : ""
     }
   });
 
+  // biome-ignore lint/correctness/useExhaustiveDependencies: <explanation>
   useEffect(() => {
     if (editingVariant) {
       variantForm.reset({
         handle: editingVariant.handle,
-        barcode: editingVariant.barcode || ""
+        barcode_path: editingVariant.barcode_path || ""
       });
     } else {
-      variantForm.reset({ handle: "", barcode: "" });
+      variantForm.reset({ handle: "", barcode_path: "" });
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [editingVariant, showVariantDialog]);
@@ -191,7 +192,8 @@ export default function ProductDetailPage() {
           id: editingVariant.id,
           product_id: productId,
           handle: values.handle,
-          barcode: values.barcode || null,
+          barcode: editingVariant.barcode,
+          barcode_path: values.barcode_path || null,
           created_at: editingVariant.created_at,
           updated_at: editingVariant.updated_at
         });
@@ -201,13 +203,23 @@ export default function ProductDetailPage() {
           productName: product?.name || "",
           variantName: values.handle
         })) as GenerateBarcodeData;
+
+        let barcodeData = null;
+        try {
+          if (typeof generateBarcodeData.barcode === "string") {
+            barcodeData = JSON.parse(generateBarcodeData.barcode);
+          } else {
+            barcodeData = generateBarcodeData.barcode;
+          }
+        } catch (e) {
+          console.error("Failed to parse barcode data:", e);
+        }
+
         await service.createProductVariant({
           product_id: productId,
           handle: values.handle,
-          barcode:
-            `${generateBarcodeData.file_path}:${JSON.stringify(
-              generateBarcodeData.barcode
-            )}` || null
+          barcode: barcodeData,
+          barcode_path: generateBarcodeData.file_path || null
         });
         toast.success("Varian berhasil ditambahkan");
       }
@@ -224,7 +236,7 @@ export default function ProductDetailPage() {
       <div className="container mx-auto py-8">
         <div className="flex items-center justify-center h-64">
           <div className="text-center">
-            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary mx-auto mb-4"></div>
+            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary mx-auto mb-4" />
             <p>Memuat data...</p>
           </div>
         </div>
@@ -246,6 +258,7 @@ export default function ProductDetailPage() {
             onClick={() => router.push("/p")}
             className="flex items-center gap-2"
           >
+            {/* biome-ignore lint/a11y/noSvgWithoutTitle: <explanation> */}
             <svg
               xmlns="http://www.w3.org/2000/svg"
               width="16"
@@ -368,40 +381,38 @@ export default function ProductDetailPage() {
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {variants.map(function (variant) {
-                    return (
-                      <TableRow key={variant.id}>
-                        <TableCell>{variant.handle}</TableCell>
-                        <TableCell>
-                          {variant.barcode || (
-                            <span className="text-muted-foreground">-</span>
-                          )}
-                        </TableCell>
-                        <TableCell className="text-right">
-                          <div className="flex gap-2 justify-end">
-                            <Button
-                              variant="outline"
-                              size="sm"
-                              onClick={function () {
-                                handleEditVariant(variant);
-                              }}
-                            >
-                              Ubah
-                            </Button>
-                            <Button
-                              variant="destructive"
-                              size="sm"
-                              onClick={function () {
-                                handleDeleteVariant(variant);
-                              }}
-                            >
-                              Hapus
-                            </Button>
-                          </div>
-                        </TableCell>
-                      </TableRow>
-                    );
-                  })}
+                  {variants.map((variant) => (
+                    <TableRow key={variant.id}>
+                      <TableCell>{variant.handle}</TableCell>
+                      <TableCell>
+                        {variant.barcode_path || (
+                          <span className="text-muted-foreground">-</span>
+                        )}
+                      </TableCell>
+                      <TableCell className="text-right">
+                        <div className="flex gap-2 justify-end">
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={() => {
+                              handleEditVariant(variant);
+                            }}
+                          >
+                            Ubah
+                          </Button>
+                          <Button
+                            variant="destructive"
+                            size="sm"
+                            onClick={() => {
+                              handleDeleteVariant(variant);
+                            }}
+                          >
+                            Hapus
+                          </Button>
+                        </div>
+                      </TableCell>
+                    </TableRow>
+                  ))}
                 </TableBody>
               </Table>
             )}
@@ -429,37 +440,33 @@ export default function ProductDetailPage() {
                 <FormField
                   control={variantForm.control}
                   name="handle"
-                  render={function ({ field }) {
-                    return (
-                      <FormItem>
-                        <FormLabel>Nama Varian</FormLabel>
-                        <FormControl>
-                          <Input placeholder="Nama varian" {...field} />
-                        </FormControl>
-                        <FormMessage />
-                      </FormItem>
-                    );
-                  }}
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Nama Varian</FormLabel>
+                      <FormControl>
+                        <Input placeholder="Nama varian" {...field} />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
                 />
                 <FormField
                   control={variantForm.control}
-                  name="barcode"
-                  render={function ({ field }) {
-                    return (
-                      <FormItem>
-                        <FormLabel>Barcode (auto generated)</FormLabel>
-                        <FormControl>
-                          <Input
-                            disabled
-                            placeholder="Barcode"
-                            {...field}
-                            value={field.value || ""}
-                          />
-                        </FormControl>
-                        <FormMessage />
-                      </FormItem>
-                    );
-                  }}
+                  name="barcode_path"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Barcode (auto generated)</FormLabel>
+                      <FormControl>
+                        <Input
+                          disabled
+                          placeholder="Barcode"
+                          {...field}
+                          value={field.value || ""}
+                        />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
                 />
                 <DialogFooter>
                   <Button type="submit">
@@ -468,7 +475,7 @@ export default function ProductDetailPage() {
                   <Button
                     type="button"
                     variant="outline"
-                    onClick={function () {
+                    onClick={() => {
                       setShowVariantDialog(false);
                     }}
                   >
@@ -483,7 +490,7 @@ export default function ProductDetailPage() {
         {/* Delete Confirmation Dialog */}
         <Dialog
           open={!!deletingVariant}
-          onOpenChange={function (open) {
+          onOpenChange={(open) => {
             if (!open) setDeletingVariant(null);
           }}
         >
@@ -506,7 +513,7 @@ export default function ProductDetailPage() {
               </Button>
               <Button
                 variant="outline"
-                onClick={function () {
+                onClick={() => {
                   setDeletingVariant(null);
                 }}
                 disabled={deleteLoading}

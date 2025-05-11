@@ -15,11 +15,18 @@ export interface Product {
   updated_at: string;
 }
 
+export interface BarcodeData {
+  height: number;
+  xdim: number;
+  encoding: number[];
+}
+
 export interface ProductVariant {
   id: number;
   product_id: number;
   handle: string;
-  barcode: string | null;
+  barcode: BarcodeData | null;
+  barcode_path: string | null;
   created_at: string;
   updated_at: string;
 }
@@ -62,7 +69,8 @@ export interface ProductVariantWithProduct extends ProductVariant {
 export interface StockLevel extends InventoryStock {
   product_name: string;
   handle: string;
-  barcode: string | null;
+  barcode: Buffer | null;
+  barcode_path: string | null;
 }
 
 export interface MovementWithItems extends InventoryMovement {
@@ -70,7 +78,8 @@ export interface MovementWithItems extends InventoryMovement {
     InventoryMovementItem & {
       product_name: string;
       handle: string;
-      barcode: string | null;
+      barcode: Buffer | null;
+      barcode_path: string | null;
     }
   >;
 }
@@ -80,7 +89,8 @@ export interface InventoryValuation {
   product_name: string;
   variant_id: number;
   handle: string;
-  barcode: string | null;
+  barcode: Buffer | null;
+  barcode_path: string | null;
   quantity: number;
   selling_price: number;
   total_value: number;

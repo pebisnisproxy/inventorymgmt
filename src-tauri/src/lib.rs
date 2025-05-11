@@ -5,6 +5,8 @@ pub mod utils;
 use tauri::Manager;
 use tauri_plugin_sql::{Migration, MigrationKind};
 
+pub const BASE_FONT: &[u8] = include_bytes!("../fonts/SF-Pro-Display-Regular.otf");
+
 #[derive(Debug, Clone)]
 pub struct AppState {
     pub db_path: String,
@@ -35,7 +37,7 @@ pub fn run() {
 
     let sql_plugin = tauri_plugin_sql::Builder::new()
         .add_migrations(
-            "sqlite:inventory.db",
+            "sqlite:inventory-dev.db",
             vec![Migration {
                 kind: MigrationKind::Up,
                 description: "Initialize database schema",
