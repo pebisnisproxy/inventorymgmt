@@ -48,6 +48,7 @@ pub fn run() {
         .build();
 
     tauri::Builder::default()
+        .plugin(tauri_plugin_fs::init())
         .plugin(sql_plugin)
         .setup(|app| {
             let cfg = cfg_clone;

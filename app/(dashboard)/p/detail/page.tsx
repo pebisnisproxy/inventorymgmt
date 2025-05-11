@@ -17,6 +17,7 @@ import type {
 } from "@/lib/types/database";
 import { formatCurrency } from "@/lib/utils";
 
+import BarcodeDisplay from "@/components/barcode-display";
 import { Button } from "@/components/ui/button";
 import {
   Card,
@@ -249,281 +250,274 @@ export default function ProductDetailPage() {
   }
 
   return (
-    <div className="container mx-auto py-8 max-w-3xl">
-      <div className="space-y-6">
-        <div className="flex items-center justify-between">
-          <h1 className="text-3xl font-bold tracking-tight">Detail Produk</h1>
-          <Button
-            variant="outline"
-            onClick={() => router.push("/p")}
-            className="flex items-center gap-2"
-          >
-            {/* biome-ignore lint/a11y/noSvgWithoutTitle: <explanation> */}
-            <svg
-              xmlns="http://www.w3.org/2000/svg"
-              width="16"
-              height="16"
-              viewBox="0 0 24 24"
-              fill="none"
-              stroke="currentColor"
-              strokeWidth="2"
-              strokeLinecap="round"
-              strokeLinejoin="round"
-              className="lucide lucide-arrow-left"
-            >
-              <path d="m12 19-7-7 7-7" />
-              <path d="M19 12H5" />
-            </svg>
-            Kembali
-          </Button>
-        </div>
+    <div className="container mx-auto py-6 space-y-6">
+      <Button
+        variant="outline"
+        onClick={() => router.push("/p")}
+        className="mb-4"
+      >
+        ← Kembali ke Daftar Produk
+      </Button>
 
-        <Card>
-          <CardHeader>
-            <CardTitle className="text-2xl">{product.name}</CardTitle>
-            <CardDescription>
-              {category ? `Kategori: ${category.name}` : "Tidak Berkategori"}
-            </CardDescription>
-          </CardHeader>
-          <CardContent>
-            <div className="grid gap-4">
-              <div className="flex items-center justify-between p-4 rounded-lg border">
+      <Card>
+        <CardHeader>
+          <CardTitle>{product.name}</CardTitle>
+          <CardDescription>
+            Detail informasi untuk produk {product.name}
+          </CardDescription>
+        </CardHeader>
+        <CardContent className="space-y-6">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <div>
+              <h3 className="text-lg font-medium mb-4">Informasi Produk</h3>
+              <div className="space-y-2">
                 <div>
-                  <h3 className="font-medium">Harga Jual</h3>
-                  <p className="text-muted-foreground">
-                    Harga jual produk saat ini
-                  </p>
+                  <span className="font-medium">Nama Produk:</span>{" "}
+                  {product.name}
                 </div>
-                <p className="text-2xl font-bold">
+                <div>
+                  <span className="font-medium">Kategori:</span>{" "}
+                  {category ? category.name : "Tidak ada kategori"}
+                </div>
+                <div>
+                  <span className="font-medium">Harga Jual:</span>{" "}
                   {formatCurrency(product.selling_price)}
-                </p>
-              </div>
-
-              <div className="flex items-center justify-between p-4 rounded-lg border">
-                <div>
-                  <h3 className="font-medium">Tanggal Dibuat</h3>
-                  <p className="text-muted-foreground">
-                    Tanggal produk ditambahkan
-                  </p>
                 </div>
-                <p className="text-lg">
-                  {new Date(product.created_at || "").toLocaleDateString(
-                    "id-ID",
-                    {
-                      year: "numeric",
-                      month: "long",
-                      day: "numeric"
-                    }
-                  )}
-                </p>
-              </div>
-
-              <div className="flex items-center justify-between p-4 rounded-lg border">
                 <div>
-                  <h3 className="font-medium">Terakhir Diperbarui</h3>
-                  <p className="text-muted-foreground">
-                    Tanggal terakhir produk diubah
-                  </p>
+                  <span className="font-medium">Tanggal Dibuat:</span>{" "}
+                  {new Date(product.created_at).toLocaleDateString()}
                 </div>
-                <p className="text-lg">
-                  {new Date(product.updated_at || "").toLocaleDateString(
-                    "id-ID",
-                    {
-                      year: "numeric",
-                      month: "long",
-                      day: "numeric"
-                    }
-                  )}
-                </p>
+                <div>
+                  <span className="font-medium">Terakhir Diperbarui:</span>{" "}
+                  {new Date(product.updated_at).toLocaleDateString()}
+                </div>
+                <div>
+                  <span className="font-medium">ID Kategori:</span>{" "}
+                  {product.category_id || "Tidak ada kategori"}
+                </div>
               </div>
             </div>
 
-            <div className="flex gap-3 mt-6">
-              <Button
-                onClick={() => router.push(`/p/edit?id=${product.id}`)}
-                className="flex-1"
-              >
-                Ubah Produk
-              </Button>
-              <Button
-                variant="outline"
-                onClick={() => router.push(`/p/delete?id=${product.id}`)}
-                className="flex-1"
-              >
-                Hapus Produk
-              </Button>
-            </div>
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardHeader>
-            <CardTitle className="text-xl">Varian Produk</CardTitle>
-            <CardDescription>Kelola varian untuk produk ini</CardDescription>
-          </CardHeader>
-          <CardContent>
-            <div className="flex justify-between mb-4">
-              <Button onClick={handleAddVariant}>Tambah Varian</Button>
-            </div>
-            {variantLoading ? (
-              <div className="text-center py-8">Memuat varian...</div>
-            ) : variants.length === 0 ? (
-              <div className="text-center py-8 text-muted-foreground">
-                Belum ada varian
+            <div>
+              <h3 className="text-lg font-medium mb-4">Varian Produk</h3>
+              <div className="mb-4">
+                <Button onClick={handleAddVariant}>+ Tambah Varian</Button>
               </div>
-            ) : (
-              <Table>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead>Nama Varian</TableHead>
-                    <TableHead>Barcode</TableHead>
-                    <TableHead className="text-right">Aksi</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {variants.map((variant) => (
-                    <TableRow key={variant.id}>
-                      <TableCell>{variant.handle}</TableCell>
-                      <TableCell>
-                        {variant.barcode_path || (
-                          <span className="text-muted-foreground">-</span>
-                        )}
-                      </TableCell>
-                      <TableCell className="text-right">
-                        <div className="flex gap-2 justify-end">
-                          <Button
-                            variant="outline"
-                            size="sm"
-                            onClick={() => {
-                              handleEditVariant(variant);
-                            }}
-                          >
-                            Ubah
-                          </Button>
-                          <Button
-                            variant="destructive"
-                            size="sm"
-                            onClick={() => {
-                              handleDeleteVariant(variant);
-                            }}
-                          >
-                            Hapus
-                          </Button>
-                        </div>
-                      </TableCell>
-                    </TableRow>
-                  ))}
-                </TableBody>
-              </Table>
-            )}
-          </CardContent>
-        </Card>
 
-        {/* Add/Edit Variant Dialog */}
-        <Dialog open={showVariantDialog} onOpenChange={setShowVariantDialog}>
-          <DialogContent>
-            <DialogHeader>
-              <DialogTitle>
-                {editingVariant ? "Ubah Varian" : "Tambah Varian"}
-              </DialogTitle>
-              <DialogDescription>
-                {editingVariant
-                  ? "Edit detail varian produk."
-                  : "Tambah varian baru untuk produk ini."}
-              </DialogDescription>
-            </DialogHeader>
-            <Form {...variantForm}>
-              <form
-                onSubmit={variantForm.handleSubmit(onSubmitVariant)}
-                className="space-y-4"
-              >
-                <FormField
-                  control={variantForm.control}
-                  name="handle"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Nama Varian</FormLabel>
-                      <FormControl>
-                        <Input placeholder="Nama varian" {...field} />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-                <FormField
-                  control={variantForm.control}
-                  name="barcode_path"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Barcode (auto generated)</FormLabel>
-                      <FormControl>
-                        <Input
-                          disabled
-                          placeholder="Barcode"
-                          {...field}
-                          value={field.value || ""}
-                        />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-                <DialogFooter>
-                  <Button type="submit">
-                    {editingVariant ? "Simpan Perubahan" : "Tambah Varian"}
-                  </Button>
-                  <Button
-                    type="button"
-                    variant="outline"
-                    onClick={() => {
-                      setShowVariantDialog(false);
-                    }}
-                  >
-                    Batal
-                  </Button>
-                </DialogFooter>
-              </form>
-            </Form>
-          </DialogContent>
-        </Dialog>
+              {variantLoading ? (
+                <div className="flex items-center justify-center h-20">
+                  <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-primary" />
+                </div>
+              ) : variants.length === 0 ? (
+                <div className="text-muted-foreground">
+                  Belum ada varian untuk produk ini
+                </div>
+              ) : (
+                <div className="space-y-4">
+                  <Table>
+                    <TableHeader>
+                      <TableRow>
+                        <TableHead>Varian</TableHead>
+                        <TableHead>Aksi</TableHead>
+                      </TableRow>
+                    </TableHeader>
+                    <TableBody>
+                      {variants.map((variant) => (
+                        <TableRow key={variant.id}>
+                          <TableCell>{variant.handle}</TableCell>
+                          <TableCell>
+                            <div className="flex space-x-2">
+                              <Button
+                                variant="outline"
+                                size="sm"
+                                onClick={() => handleEditVariant(variant)}
+                              >
+                                Edit
+                              </Button>
+                              <Button
+                                variant="destructive"
+                                size="sm"
+                                onClick={() => handleDeleteVariant(variant)}
+                              >
+                                Hapus
+                              </Button>
+                            </div>
+                          </TableCell>
+                        </TableRow>
+                      ))}
+                    </TableBody>
+                  </Table>
+                </div>
+              )}
+            </div>
+          </div>
 
-        {/* Delete Confirmation Dialog */}
-        <Dialog
-          open={!!deletingVariant}
-          onOpenChange={(open) => {
-            if (!open) setDeletingVariant(null);
-          }}
-        >
-          <DialogContent>
-            <DialogHeader>
-              <DialogTitle>Hapus Varian</DialogTitle>
-              <DialogDescription>
-                Apakah Anda yakin ingin menghapus varian{" "}
-                <b>{deletingVariant?.handle}</b>? Tindakan ini tidak dapat
-                dibatalkan.
-              </DialogDescription>
-            </DialogHeader>
-            <DialogFooter>
-              <Button
-                variant="destructive"
-                onClick={confirmDeleteVariant}
-                disabled={deleteLoading}
-              >
-                {deleteLoading ? "Menghapus..." : "Hapus"}
-              </Button>
-              <Button
-                variant="outline"
-                onClick={() => {
-                  setDeletingVariant(null);
-                }}
-                disabled={deleteLoading}
-              >
-                Batal
-              </Button>
-            </DialogFooter>
-          </DialogContent>
-        </Dialog>
-      </div>
+          {/* Add Barcode Display Section Here */}
+          {variants.length > 0 && (
+            <div className="mt-8 pt-4 border-t">
+              <h3 className="text-lg font-medium mb-4">Barcode Produk</h3>
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                {variants.map((variant) =>
+                  variant.barcode_path ? (
+                    <div key={variant.id} className="border rounded-lg p-3">
+                      <BarcodeDisplay
+                        productName={product.name}
+                        productHandle={variant.handle}
+                        barcodePath={variant.barcode_path || ""}
+                      />
+                    </div>
+                  ) : (
+                    <div
+                      key={variant.id}
+                      className="border rounded-lg p-3 flex flex-col items-center justify-center h-[210px]"
+                    >
+                      <p className="text-sm text-gray-500 text-center">
+                        Barcode tidak tersedia untuk varian{" "}
+                        <span className="font-medium">{variant.handle}</span>
+                      </p>
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        className="mt-2"
+                        onClick={async () => {
+                          try {
+                            const generateBarcodeData = (await invoke(
+                              "generate_barcode",
+                              {
+                                productName: product?.name || "",
+                                variantName: variant.handle
+                              }
+                            )) as GenerateBarcodeData;
+
+                            const service = InventoryService.getInstance();
+                            await service.updateProductVariant({
+                              ...variant,
+                              barcode_path: generateBarcodeData.file_path
+                            });
+
+                            toast.success("Barcode berhasil dibuat");
+                            loadVariants();
+                          } catch (error) {
+                            console.error(error);
+                            toast.error("Gagal membuat barcode");
+                          }
+                        }}
+                      >
+                        Generate Barcode
+                      </Button>
+                    </div>
+                  )
+                )}
+              </div>
+            </div>
+          )}
+        </CardContent>
+      </Card>
+
+      {/* Add/Edit Variant Dialog */}
+      <Dialog open={showVariantDialog} onOpenChange={setShowVariantDialog}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>
+              {editingVariant ? "Ubah Varian" : "Tambah Varian"}
+            </DialogTitle>
+            <DialogDescription>
+              {editingVariant
+                ? "Edit detail varian produk."
+                : "Tambah varian baru untuk produk ini."}
+            </DialogDescription>
+          </DialogHeader>
+          <Form {...variantForm}>
+            <form
+              onSubmit={variantForm.handleSubmit(onSubmitVariant)}
+              className="space-y-4"
+            >
+              <FormField
+                control={variantForm.control}
+                name="handle"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Nama Varian</FormLabel>
+                    <FormControl>
+                      <Input placeholder="Nama varian" {...field} />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+              <FormField
+                control={variantForm.control}
+                name="barcode_path"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Barcode (auto generated)</FormLabel>
+                    <FormControl>
+                      <Input
+                        disabled
+                        placeholder="Barcode"
+                        {...field}
+                        value={field.value || ""}
+                      />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+              <DialogFooter>
+                <Button type="submit">
+                  {editingVariant ? "Simpan Perubahan" : "Tambah Varian"}
+                </Button>
+                <Button
+                  type="button"
+                  variant="outline"
+                  onClick={() => {
+                    setShowVariantDialog(false);
+                  }}
+                >
+                  Batal
+                </Button>
+              </DialogFooter>
+            </form>
+          </Form>
+        </DialogContent>
+      </Dialog>
+
+      {/* Delete Confirmation Dialog */}
+      <Dialog
+        open={!!deletingVariant}
+        onOpenChange={(open) => {
+          if (!open) setDeletingVariant(null);
+        }}
+      >
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Hapus Varian</DialogTitle>
+            <DialogDescription>
+              Apakah Anda yakin ingin menghapus varian{" "}
+              <b>{deletingVariant?.handle}</b>? Tindakan ini tidak dapat
+              dibatalkan.
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter>
+            <Button
+              variant="destructive"
+              onClick={confirmDeleteVariant}
+              disabled={deleteLoading}
+            >
+              {deleteLoading ? "Menghapus..." : "Hapus"}
+            </Button>
+            <Button
+              variant="outline"
+              onClick={() => {
+                setDeletingVariant(null);
+              }}
+              disabled={deleteLoading}
+            >
+              Batal
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

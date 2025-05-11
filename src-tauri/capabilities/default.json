@@ -9,6 +9,7 @@
     "core:default",
     "sql:default",
     "sql:allow-execute",
-    "log:default"
+    "log:default",
+    "fs:default"
   ]
 }

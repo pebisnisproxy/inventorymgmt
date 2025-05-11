@@ -1,3 +1,5 @@
+import { Image } from "@tauri-apps/api/image";
+import { exists, readFile } from "@tauri-apps/plugin-fs";
 import { type ClassValue, clsx } from "clsx";
 import { toast } from "sonner";
 import { twMerge } from "tailwind-merge";
@@ -17,4 +19,15 @@ export function formatCurrency(amount: number): string {
 export function throwUnimplemented() {
   toast.error("Still not implemented yet!");
   throw new Error("Still not implemented yet!");
+}
+
+export async function getImage(path: string) {
+  const isExists = await exists(path);
+  if (!isExists) {
+    throw new Error("Image does not exist");
+  }
+
+  // const imageBuffer = await readFile(path);
+  const image = await Image.fromPath(path);
+  return image;
 }

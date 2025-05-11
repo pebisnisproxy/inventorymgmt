@@ -18,6 +18,7 @@
     "@radix-ui/react-select": "^2.2.2",
     "@radix-ui/react-slot": "^1.2.0",
     "@tauri-apps/api": "^2.5.0",
+    "@tauri-apps/plugin-fs": "~2.2.1",
     "@tauri-apps/plugin-log": "~2.4.0",
     "@tauri-apps/plugin-sql": "~2.2.0",
     "class-variance-authority": "^0.7.1",

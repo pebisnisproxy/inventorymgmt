@@ -189,29 +189,52 @@ impl BarcodeManager {
         text: &str,
         y_offset: u32,
     ) -> Result<()> {
-        use ab_glyph::{Font, PxScale};
+        use ab_glyph::{Font, Point, PxScale};
 
         debug!("Drawing text: \"{}\" at y-offset: {}", text, y_offset);
 
+        // Use slightly larger font size for better readability
         let scale = PxScale {
             x: DEFAULT_FONT_SIZE,
             y: DEFAULT_FONT_SIZE,
         };
 
-        // Calculate text width for centering
+        // Calculate text width for better centering
         let canvas_width = canvas.width() as f32;
 
-        // Simple approach - use fixed width per character since
-        // calculating exact text width with ab_glyph is complex
-        let approx_char_width = DEFAULT_FONT_SIZE * 0.6;
-        let text_width = text.len() as f32 * approx_char_width;
+        // Better approximation for text width based on character types
+        // This accounts for wider and narrower characters
+        let text_width: f32 = text
+            .chars()
+            .map(|c| {
+                if c.is_uppercase() || c == 'W' || c == 'M' {
+                    // Wider characters
+                    DEFAULT_FONT_SIZE * 0.75
+                } else if c.is_lowercase()
+                    && (c == 'i' || c == 'l' || c == 'j' || c == 't' || c == 'f')
+                {
+                    // Narrower characters
+                    DEFAULT_FONT_SIZE * 0.4
+                } else if c == ' ' {
+                    // Space character
+                    DEFAULT_FONT_SIZE * 0.3
+                } else if c == '(' || c == ')' {
+                    // Parentheses
+                    DEFAULT_FONT_SIZE * 0.35
+                } else {
+                    // Standard characters
+                    DEFAULT_FONT_SIZE * 0.55
+                }
+            })
+            .sum();
 
-        // Calculate x position to center the text
+        // Calculate x position to center the text precisely
         let x_position = ((canvas_width - text_width) / 2.0).max(0.0) as i32;
 
         // Add more vertical space between barcode and text
         let y_position = y_offset as i32 + TEXT_PADDING as i32;
 
+        // Draw text in black color
         imageproc::drawing::draw_text_mut(
             canvas,
             Rgb([0, 0, 0]), // Black text
