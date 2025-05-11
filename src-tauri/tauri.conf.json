@@ -28,7 +28,9 @@
           "$APPDATA/**",
           "$APPDATA/org.lichtlabs.inventorymgmt/**",
           "$APPDATA/org.lichtlabs.inventorymgmt/barcodes/**",
-          "$APPDATA/org.lichtlabs.inventorymgmt/images/**"
+          "$APPDATA/org.lichtlabs.inventorymgmt/images/**",
+          "$LOCALDATA/org.lichtlabs.inventorymgmt/**",
+          "$LOCALDATA/org.lichtlabs.inventorymgmt/images/**"
         ]
       }
     }
@@ -45,7 +47,9 @@
     ]
   },
   "plugins": {
-    "fs": {},
+    "fs": {
+      "requireLiteralLeadingDot": false
+    },
     "sql": {
       "preload": ["sqlite:inventorymgmt-development.db"]
     }

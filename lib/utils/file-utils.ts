@@ -107,7 +107,23 @@ export async function pickAndSaveImage(
     const sanitizedProductName = sanitizeForPath(productName);
     const sanitizedVariantHandle = sanitizeForPath(variantHandle);
 
-    const imgDir = `${dataDir}/images/${sanitizedProductName}/${sanitizedVariantHandle}`;
+    // Remove the duplicate app identifier if present in the path
+    // dataDir might be something like: /Users/sena/Library/Application Support/org.lichtlabs.inventorymgmt/
+    // We don't want to add the organization ID again in our path
+    const basePath = dataDir.endsWith("/") ? dataDir.slice(0, -1) : dataDir;
+
+    // Check if the app identifier is already in the path to avoid duplication
+    const appIdentifier = "org.lichtlabs.inventorymgmt";
+    let imgDir: string;
+
+    if (basePath.includes(appIdentifier)) {
+      // Path already contains app identifier, don't add it again
+      imgDir = `${basePath}/images/${sanitizedProductName}/${sanitizedVariantHandle}`;
+    } else {
+      // Path doesn't contain app identifier, use the original construction
+      imgDir = `${basePath}/${appIdentifier}/images/${sanitizedProductName}/${sanitizedVariantHandle}`;
+    }
+
     console.log(`Creating directory: ${imgDir}`);
 
     // Create directories if they don't exist
@@ -118,6 +134,8 @@ export async function pickAndSaveImage(
     const destFileName = `product_image_${nanoid(6)}.${fileExt}`;
     const destPath = `${imgDir}/${destFileName}`;
 
+    console.log(`Copying from ${sourcePath} to ${destPath}`);
+
     // Copy the file
     await copyFile(sourcePath, destPath);
     console.log(`Successfully saved image to ${destPath}`);
@@ -125,7 +143,9 @@ export async function pickAndSaveImage(
     return destPath;
   } catch (error) {
     console.error("Error picking and saving image:", error);
-    toast.error("Failed to save image");
+    toast.error(
+      `Failed to save image: ${error instanceof Error ? error.message : String(error)}`
+    );
     return null;
   }
 }

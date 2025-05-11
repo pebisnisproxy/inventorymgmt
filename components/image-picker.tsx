@@ -1,10 +1,10 @@
 import { Image as ImageIcon, Loader2 } from "lucide-react";
 import Image from "next/image";
-import { useCallback, useState } from "react";
+import { useCallback, useMemo, useState } from "react";
 import { toast } from "sonner";
 
 import { cn } from "@/lib/utils";
-import { pickAndSaveImage } from "@/lib/utils/file-utils";
+import { getAssetUrl, pickAndSaveImage } from "@/lib/utils/file-utils";
 
 import { Button } from "@/components/ui/button";
 
@@ -32,6 +32,12 @@ export default function ImagePicker({
 }: ImagePickerProps) {
   const [imagePath, setImagePath] = useState<string | null>(initialImagePath);
   const [isLoading, setIsLoading] = useState(false);
+
+  // Convert file path to asset URL using Tauri's asset protocol
+  const imageUrl = useMemo(() => {
+    if (!imagePath) return null;
+    return getAssetUrl(imagePath);
+  }, [imagePath]);
 
   const handlePickImage = useCallback(async () => {
     setIsLoading(true);
@@ -68,7 +74,7 @@ export default function ImagePicker({
       {imagePath ? (
         <div className="relative mb-3" style={{ width, height }}>
           <Image
-            src={imagePath}
+            src={imageUrl || ""}
             alt={`Image for ${productName} (${productHandle})`}
             width={width}
             height={height}
@@ -96,6 +102,7 @@ export default function ImagePicker({
           style={{ width, height }}
           onClick={handlePickImage}
           disabled={isLoading}
+          onKeyDown={handleKeyDown}
         >
           {isLoading ? (
             <Loader2 className="animate-spin text-gray-400 mb-2" size={32} />
@@ -122,7 +129,7 @@ export default function ImagePicker({
             </>
           ) : (
             <>
-              <ImageIcon size={16} />
+              <ImageIcon className="h-4 w-4 mr-2" />
               Select Image
             </>
           )}
