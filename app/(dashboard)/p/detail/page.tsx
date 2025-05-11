@@ -14,7 +14,8 @@ import type { GenerateBarcodeData } from "@/lib/types/common";
 import type {
   Category,
   Product,
-  ProductVariantWithProduct
+  ProductVariantWithProduct,
+  StockLevel
 } from "@/lib/types/database";
 import { formatCurrency } from "@/lib/utils";
 
@@ -62,6 +63,9 @@ export default function ProductDetailPage() {
   const [category, setCategory] = useState<Category | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [variants, setVariants] = useState<ProductVariantWithProduct[]>([]);
+  const [stockLevels, setStockLevels] = useState<Map<number, number>>(
+    new Map()
+  );
   const [variantLoading, setVariantLoading] = useState(true);
   const [showVariantDialog, setShowVariantDialog] = useState(false);
   const [editingVariant, setEditingVariant] =
@@ -118,8 +122,21 @@ export default function ProductDetailPage() {
     try {
       const service = InventoryService.getInstance();
       await service.initialize();
+
+      // Load variants
       const result = await service.getProductVariants(productId);
       setVariants(result);
+
+      // Load stock levels for this product
+      const stockData = await service.getStockLevelsForProduct(productId);
+
+      // Create a map of variant ID to stock quantity
+      const stockMap = new Map<number, number>();
+      for (const stock of stockData) {
+        stockMap.set(stock.product_variant_id, stock.quantity);
+      }
+
+      setStockLevels(stockMap);
     } catch (error) {
       toast.error("Gagal memuat varian produk");
     } finally {
@@ -379,6 +396,8 @@ export default function ProductDetailPage() {
                     <TableHeader>
                       <TableRow>
                         <TableHead>Varian</TableHead>
+                        <TableHead>Stok</TableHead>
+                        <TableHead>Operasi</TableHead>
                         <TableHead>Aksi</TableHead>
                       </TableRow>
                     </TableHeader>
@@ -386,6 +405,47 @@ export default function ProductDetailPage() {
                       {variants.map((variant) => (
                         <TableRow key={variant.id}>
                           <TableCell>{variant.handle}</TableCell>
+                          <TableCell>
+                            {stockLevels.has(variant.id)
+                              ? stockLevels.get(variant.id)
+                              : "0"}
+                          </TableCell>
+                          <TableCell>
+                            <div className="flex space-x-2">
+                              <Button
+                                variant="outline"
+                                size="sm"
+                                className="bg-green-50 hover:bg-green-100 text-green-700 border-green-200"
+                                onClick={() =>
+                                  router.push(`/p/in?variantId=${variant.id}`)
+                                }
+                              >
+                                Masuk
+                              </Button>
+                              <Button
+                                variant="outline"
+                                size="sm"
+                                className="bg-red-50 hover:bg-red-100 text-red-700 border-red-200"
+                                onClick={() =>
+                                  router.push(`/p/out?variantId=${variant.id}`)
+                                }
+                              >
+                                Keluar
+                              </Button>
+                              <Button
+                                variant="outline"
+                                size="sm"
+                                className="bg-yellow-50 hover:bg-yellow-100 text-yellow-700 border-yellow-200"
+                                onClick={() =>
+                                  router.push(
+                                    `/p/return?variantId=${variant.id}`
+                                  )
+                                }
+                              >
+                                Return
+                              </Button>
+                            </div>
+                          </TableCell>
                           <TableCell>
                             <div className="flex space-x-2">
                               <Button

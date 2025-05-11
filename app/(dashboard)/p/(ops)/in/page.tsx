@@ -1,6 +1,7 @@
 "use client";
 
 import { useSearchParams } from "next/navigation";
+import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 import { toast } from "sonner";
 
@@ -13,6 +14,7 @@ import type {
   ProductWithCategory
 } from "@/lib/types/database";
 
+import { Button } from "@/components/ui/button";
 import {
   Table,
   TableBody,
@@ -23,6 +25,8 @@ import {
   TableHeader,
   TableRow
 } from "@/components/ui/table";
+
+import { useDateFilter } from "../layout";
 
 interface MovementWithItems extends InventoryMovement {
   items: Array<
@@ -37,6 +41,8 @@ interface MovementWithItems extends InventoryMovement {
 export default function ProductInPage() {
   const searchParams = useSearchParams();
   const variantIdFromUrl = searchParams.get("variantId");
+  const router = useRouter();
+  const { startDate, endDate } = useDateFilter();
 
   const [movements, setMovements] = useState<MovementWithItems[]>([]);
   const [isLoading, setIsLoading] = useState(true);
@@ -56,7 +62,11 @@ export default function ProductInPage() {
   async function loadData() {
     try {
       await InventoryManager.initialize();
-      const movementList = await inventoryService.getInventoryMovements("IN");
+      const movementList = await inventoryService.getInventoryMovements(
+        "IN",
+        startDate,
+        endDate
+      );
       const detailedMovements: MovementWithItems[] = [];
       for (let i = 0; i < movementList.length; i++) {
         const movement = movementList[i];
@@ -116,6 +126,20 @@ export default function ProductInPage() {
       // Set the selected variant
       setSelectedVariantId(variantId);
 
+      // Get product data to set the cost per unit
+      const productVariants = await inventoryService.getProductVariants(
+        variant.product_id
+      );
+      const variantWithProduct = productVariants.find(
+        (v) => v.id === variantId
+      );
+      if (variantWithProduct) {
+        setCostPerUnit(variantWithProduct.selling_price);
+      }
+
+      // Ensure quantity is set to 1
+      setQuantity(1);
+
       // Set focus to quantity field
       const quantityInput = document.getElementById(
         "quantity"
@@ -124,7 +148,7 @@ export default function ProductInPage() {
         quantityInput.focus();
       }
 
-      toast.success("Produk ditemukan, silakan isi jumlah dan harga");
+      toast.success("Produk ditemukan, silakan isi jumlah");
     } catch (error) {
       console.error("Error loading variant from URL:", error);
       toast.error("Gagal memuat data produk");
@@ -142,15 +166,20 @@ export default function ProductInPage() {
   }
 
   function handleVariantChange(event: React.ChangeEvent<HTMLSelectElement>) {
-    setSelectedVariantId(Number(event.target.value));
+    const variantId = Number(event.target.value);
+    setSelectedVariantId(variantId);
+
+    // Automatically set the cost per unit from the selected variant
+    if (variantId) {
+      const selectedVariant = variants.find((v) => v.id === variantId);
+      if (selectedVariant) {
+        setCostPerUnit(selectedVariant.selling_price);
+      }
+    }
   }
 
   function handleQuantityChange(event: React.ChangeEvent<HTMLInputElement>) {
     setQuantity(Number(event.target.value));
-  }
-
-  function handleCostPerUnitChange(event: React.ChangeEvent<HTMLInputElement>) {
-    setCostPerUnit(Number(event.target.value));
   }
 
   function handleNotesChange(event: React.ChangeEvent<HTMLInputElement>) {
@@ -160,7 +189,7 @@ export default function ProductInPage() {
   async function handleSubmit(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault();
     if (!selectedVariantId || quantity <= 0 || costPerUnit <= 0) {
-      toast.error("Lengkapi data produk, varian, jumlah, dan harga beli.");
+      toast.error("Lengkapi data produk, varian, dan jumlah.");
       return;
     }
     setIsSubmitting(true);
@@ -202,7 +231,7 @@ export default function ProductInPage() {
         loadVariantFromUrl(variantId);
       }
     }
-  }, [variantIdFromUrl]);
+  }, [variantIdFromUrl, startDate, endDate]);
 
   if (isLoading) {
     return (
@@ -255,16 +284,9 @@ export default function ProductInPage() {
             type="number"
             className="border rounded px-2 py-1 w-24"
             min={1}
+            value={quantity}
             onChange={handleQuantityChange}
             placeholder="Jumlah"
-            required
-          />
-          <input
-            type="number"
-            className="border rounded px-2 py-1 w-32"
-            min={0}
-            onChange={handleCostPerUnitChange}
-            placeholder="Harga Beli"
             required
           />
           <input
@@ -294,6 +316,7 @@ export default function ProductInPage() {
             <TableHead>Jumlah</TableHead>
             <TableHead>Harga Satuan</TableHead>
             <TableHead>Total</TableHead>
+            <TableHead>Aksi</TableHead>
           </TableRow>
         </TableHeader>
         <TableBody>
@@ -309,6 +332,27 @@ export default function ProductInPage() {
                 <TableCell>{item.quantity}</TableCell>
                 <TableCell>{item.price_per_unit}</TableCell>
                 <TableCell>{item.total_price}</TableCell>
+                <TableCell>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={async () => {
+                      try {
+                        // Get the variant first
+                        const variant = await inventoryService.getVariantById(
+                          item.product_variant_id
+                        );
+                        if (variant) {
+                          router.push(`/p/detail?id=${variant.product_id}`);
+                        }
+                      } catch (error) {
+                        toast.error("Failed to navigate to product details");
+                      }
+                    }}
+                  >
+                    Detail
+                  </Button>
+                </TableCell>
               </TableRow>
             ))
           )}

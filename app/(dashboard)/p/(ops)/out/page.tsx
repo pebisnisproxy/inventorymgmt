@@ -1,6 +1,6 @@
 "use client";
 
-import { useSearchParams } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import { useEffect, useState } from "react";
 import { toast } from "sonner";
 
@@ -13,6 +13,7 @@ import type {
   ProductWithCategory
 } from "@/lib/types/database";
 
+import { Button } from "@/components/ui/button";
 import {
   Table,
   TableBody,
@@ -23,6 +24,8 @@ import {
   TableHeader,
   TableRow
 } from "@/components/ui/table";
+
+import { useDateFilter } from "../layout";
 
 interface MovementWithItems extends InventoryMovement {
   items: Array<
@@ -37,6 +40,8 @@ interface MovementWithItems extends InventoryMovement {
 export default function ProductOutPage() {
   const searchParams = useSearchParams();
   const variantIdFromUrl = searchParams.get("variantId");
+  const router = useRouter();
+  const { startDate, endDate } = useDateFilter();
 
   const [movements, setMovements] = useState<MovementWithItems[]>([]);
   const [isLoading, setIsLoading] = useState(true);
@@ -56,7 +61,11 @@ export default function ProductOutPage() {
   async function loadData() {
     try {
       await InventoryManager.initialize();
-      const movementList = await inventoryService.getInventoryMovements("OUT");
+      const movementList = await inventoryService.getInventoryMovements(
+        "OUT",
+        startDate,
+        endDate
+      );
       const detailedMovements: MovementWithItems[] = [];
       for (let i = 0; i < movementList.length; i++) {
         const movement = movementList[i];
@@ -127,6 +136,9 @@ export default function ProductOutPage() {
         setSellingPrice(variantWithProduct.selling_price);
       }
 
+      // Ensure quantity is set to 1
+      setQuantity(1);
+
       // Set focus to quantity field
       const quantityInput = document.getElementById(
         "quantity"
@@ -153,17 +165,20 @@ export default function ProductOutPage() {
   }
 
   function handleVariantChange(event: React.ChangeEvent<HTMLSelectElement>) {
-    setSelectedVariantId(Number(event.target.value));
+    const variantId = Number(event.target.value);
+    setSelectedVariantId(variantId);
+
+    // Automatically set the selling price from the selected variant
+    if (variantId) {
+      const selectedVariant = variants.find((v) => v.id === variantId);
+      if (selectedVariant) {
+        setSellingPrice(selectedVariant.selling_price);
+      }
+    }
   }
 
   function handleQuantityChange(event: React.ChangeEvent<HTMLInputElement>) {
     setQuantity(Number(event.target.value));
-  }
-
-  function handleSellingPriceChange(
-    event: React.ChangeEvent<HTMLInputElement>
-  ) {
-    setSellingPrice(Number(event.target.value));
   }
 
   function handleNotesChange(event: React.ChangeEvent<HTMLInputElement>) {
@@ -173,11 +188,30 @@ export default function ProductOutPage() {
   async function handleSubmit(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault();
     if (!selectedVariantId || quantity <= 0 || sellingPrice <= 0) {
-      toast.error("Lengkapi data produk, varian, jumlah, dan harga jual.");
+      toast.error("Lengkapi data produk, varian, dan jumlah.");
       return;
     }
     setIsSubmitting(true);
     try {
+      // Check stock availability first
+      const insufficientItems = await InventoryManager.checkStockAvailability([
+        {
+          variantId: selectedVariantId,
+          quantity: quantity
+        }
+      ]);
+
+      // If there are insufficient items, show an error
+      if (insufficientItems.length > 0) {
+        const item = insufficientItems[0];
+        toast.error(
+          `Stok tidak mencukupi. Tersedia: ${item.available}, Diminta: ${item.requested}`
+        );
+        setIsSubmitting(false);
+        return;
+      }
+
+      // If stock is sufficient, proceed with recording the sale
       await InventoryManager.recordSale(
         [
           {
@@ -197,6 +231,7 @@ export default function ProductOutPage() {
       setVariants([]);
       await loadData();
     } catch (error) {
+      console.error("Error recording sale:", error);
       toast.error("Gagal merekam transaksi produk keluar.");
     } finally {
       setIsSubmitting(false);
@@ -215,7 +250,7 @@ export default function ProductOutPage() {
         loadVariantFromUrl(variantId);
       }
     }
-  }, [variantIdFromUrl]);
+  }, [variantIdFromUrl, startDate, endDate]);
 
   if (isLoading) {
     return (
@@ -273,14 +308,6 @@ export default function ProductOutPage() {
             required
           />
           <input
-            type="number"
-            className="border rounded px-2 py-1 w-32"
-            min={0}
-            onChange={handleSellingPriceChange}
-            placeholder="Harga Jual"
-            required
-          />
-          <input
             type="text"
             className="border rounded px-2 py-1 flex-1"
             value={notes}
@@ -307,6 +334,7 @@ export default function ProductOutPage() {
             <TableHead>Jumlah</TableHead>
             <TableHead>Harga Satuan</TableHead>
             <TableHead>Total</TableHead>
+            <TableHead>Aksi</TableHead>
           </TableRow>
         </TableHeader>
         <TableBody>
@@ -322,6 +350,27 @@ export default function ProductOutPage() {
                 <TableCell>{item.quantity}</TableCell>
                 <TableCell>{item.price_per_unit}</TableCell>
                 <TableCell>{item.total_price}</TableCell>
+                <TableCell>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={async () => {
+                      try {
+                        // Get the variant first
+                        const variant = await inventoryService.getVariantById(
+                          item.product_variant_id
+                        );
+                        if (variant) {
+                          router.push(`/p/detail?id=${variant.product_id}`);
+                        }
+                      } catch (error) {
+                        toast.error("Failed to navigate to product details");
+                      }
+                    }}
+                  >
+                    Detail
+                  </Button>
+                </TableCell>
               </TableRow>
             ))
           )}
