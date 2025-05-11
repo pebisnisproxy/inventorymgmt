@@ -258,7 +258,8 @@ export default function ProductOutPage() {
             <option value="">Pilih Varian</option>
             {variants.map((variant) => (
               <option key={variant.id} value={variant.id}>
-                {variant.handle} {variant.barcode ? `(${variant.barcode})` : ""}
+                {variant.handle}{" "}
+                {variant.barcode_code ? `(${variant.barcode_code})` : ""}
               </option>
             ))}
           </select>
@@ -267,7 +268,6 @@ export default function ProductOutPage() {
             type="number"
             className="border rounded px-2 py-1 w-24"
             min={1}
-            value={quantity}
             onChange={handleQuantityChange}
             placeholder="Jumlah"
             required
@@ -276,7 +276,6 @@ export default function ProductOutPage() {
             type="number"
             className="border rounded px-2 py-1 w-32"
             min={0}
-            value={sellingPrice}
             onChange={handleSellingPriceChange}
             placeholder="Harga Jual"
             required
