@@ -236,7 +236,28 @@ export class InventoryService {
    */
   public async deleteProduct(id: number): Promise<void> {
     if (!this.db) throw new Error("Database not initialized");
+
     try {
+      // First, get all variants for this product to find barcode files
+      const variants = await this.getProductVariants(id);
+
+      // Import dynamically to avoid initialization issues
+      const { deleteFile } = await import("./utils/file-utils");
+
+      // Delete barcode files for each variant
+      for (const variant of variants) {
+        if (variant.barcode_path) {
+          // Delete barcode file asynchronously (don't wait for completion)
+          deleteFile(variant.barcode_path).catch((err) => {
+            console.error(
+              `Failed to delete barcode file for variant ${variant?.id ?? "unknown"}:`,
+              err
+            );
+          });
+        }
+      }
+
+      // Then delete the product (cascades to variants in the database)
       await this.db.execute("DELETE FROM products WHERE id = ?", [id]);
     } catch (error) {
       console.error(`Failed to delete product with ID ${id}:`, error);
@@ -324,8 +345,27 @@ export class InventoryService {
    */
   public async deleteProductVariant(id: number): Promise<void> {
     if (!this.db) throw new Error("Database not initialized");
+
     try {
+      // First get the variant to find its barcode file
+      const variant = await this.getVariantById(id);
+
+      // Delete the variant from the database
       await this.db.execute("DELETE FROM product_variants WHERE id = ?", [id]);
+
+      // Delete the barcode file if it exists
+      if (variant?.barcode_path) {
+        // Import dynamically to avoid initialization issues
+        const { deleteFile } = await import("./utils/file-utils");
+
+        // Delete the file asynchronously (don't wait for completion)
+        deleteFile(variant.barcode_path).catch((err) => {
+          console.error(
+            `Failed to delete barcode file for variant ${variant?.id ?? "unknown"}:`,
+            err
+          );
+        });
+      }
     } catch (error) {
       console.error(`Failed to delete variant with ID ${id}:`, error);
       throw error;

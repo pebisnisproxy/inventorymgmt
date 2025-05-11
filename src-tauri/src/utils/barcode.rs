@@ -189,7 +189,7 @@ impl BarcodeManager {
         text: &str,
         y_offset: u32,
     ) -> Result<()> {
-        use ab_glyph::{Font, Point, PxScale};
+        use ab_glyph::PxScale;
 
         debug!("Drawing text: \"{}\" at y-offset: {}", text, y_offset);
 

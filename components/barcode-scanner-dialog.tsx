@@ -3,7 +3,6 @@ import { toast } from "sonner";
 
 import { InventoryService } from "@/lib/inventory-service";
 import type { ProductVariantWithProduct } from "@/lib/types/database";
-import { throwUnimplemented } from "@/lib/utils";
 
 import { Button } from "@/components/ui/button";
 import {

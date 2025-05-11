@@ -1,5 +1,5 @@
 import { Image } from "@tauri-apps/api/image";
-import { exists, readFile } from "@tauri-apps/plugin-fs";
+import { exists } from "@tauri-apps/plugin-fs";
 import { type ClassValue, clsx } from "clsx";
 import { toast } from "sonner";
 import { twMerge } from "tailwind-merge";

@@ -7,7 +7,7 @@ import {
   PackageOpen,
   PlusCircle,
   RefreshCw,
-  Search,
+  Settings,
   Undo2
 } from "lucide-react";
 import Link from "next/link";
@@ -20,6 +20,7 @@ import { useProductStore } from "@/lib/store/product-store";
 import type { Category } from "@/lib/types/database";
 import { cn } from "@/lib/utils";
 
+import { CommandSearch } from "@/components/command-search";
 import { Button } from "@/components/ui/button";
 import {
   ResizableHandle,
@@ -275,7 +276,7 @@ export default function AppDashboard({
           <h1 className={cn("font-bold ml-2", isMobile && "ml-1 text-sm")}>
             {"> ivmv2"}
           </h1>
-          <div className="flex items-center space-x-2">
+          <div className="ml-auto flex items-center gap-2">
             <Button
               variant="outline"
               size="icon"
@@ -289,12 +290,14 @@ export default function AppDashboard({
                 <RefreshCw className="w-4 h-4" />
               )}
             </Button>
+            <CommandSearch />
             <Button
               variant="outline"
               size="icon"
               className={cn(isMobile && "h-8 w-8")}
+              onClick={() => router.push("/settings")}
             >
-              <Search className="w-4 h-4" />
+              <Settings className="w-4 h-4" />
             </Button>
           </div>
         </header>

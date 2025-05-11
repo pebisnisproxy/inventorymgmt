@@ -2,11 +2,11 @@
 
 import { Barcode, Plus } from "lucide-react";
 import { usePathname, useRouter } from "next/navigation";
-import { useState } from "react";
 
 import type { ProductVariantWithProduct } from "@/lib/types/database";
 
 import { BarcodeScannerDialog } from "@/components/barcode-scanner-dialog";
+import { CommandSearch } from "@/components/command-search";
 import { DatePicker } from "@/components/date-picker";
 import { ProductDialog } from "@/components/product-dialog";
 import { Button } from "@/components/ui/button";
@@ -29,6 +29,7 @@ export default function ProductOperationLayout({
   return (
     <div className="lg:p-4">
       <div className="w-max absolute right-4 lg:right-8 flex gap-2 items-center">
+        <CommandSearch />
         <BarcodeScannerDialog
           type={type}
           onProductFound={handleProductFound}

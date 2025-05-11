@@ -27,7 +27,8 @@
           "*/**",
           "$APPDATA/**",
           "$APPDATA/org.lichtlabs.inventorymgmt/**",
-          "$APPDATA/org.lichtlabs.inventorymgmt/barcodes/**"
+          "$APPDATA/org.lichtlabs.inventorymgmt/barcodes/**",
+          "$APPDATA/org.lichtlabs.inventorymgmt/images/**"
         ]
       }
     }

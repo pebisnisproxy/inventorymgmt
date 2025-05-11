@@ -1,5 +1,6 @@
 use crate::utils::barcode::{Barcode, BarcodeManager};
 use anyhow::Context;
+use regex::Regex;
 use serde::{Deserialize, Serialize};
 use std::path::PathBuf;
 use tauri::{AppHandle, Manager};
@@ -10,28 +11,58 @@ pub struct GenerateBarcodeData {
     pub barcode: Barcode,
 }
 
+/// Sanitizes a string for safe use in file paths
+fn sanitize_for_path(input: &str) -> String {
+    if input.is_empty() {
+        return String::new();
+    }
+
+    // Initialize these regexes only once if this function is called frequently
+    let unsafe_chars = Regex::new(r#"[/\\?%*:|"<>.,;=]"#).unwrap();
+    let spaces = Regex::new(r"\s+").unwrap();
+    let multiple_hyphens = Regex::new(r"-+").unwrap();
+    let multiple_underscores = Regex::new(r"_+").unwrap();
+
+    // Replace problematic characters
+    let sanitized = unsafe_chars.replace_all(input.trim(), "-");
+    let sanitized = spaces.replace_all(&sanitized, "_");
+    let sanitized = multiple_hyphens.replace_all(&sanitized, "-");
+    let sanitized = multiple_underscores.replace_all(&sanitized, "_");
+
+    sanitized.to_uppercase().to_string()
+}
+
 #[tauri::command(async)]
 pub async fn generate_barcode(
     product_name: String,
     variant_name: String,
     app_handle: AppHandle,
 ) -> Result<GenerateBarcodeData, String> {
-    let product_name = product_name.trim().to_uppercase();
-    let variant_name = variant_name.trim().to_uppercase();
+    // Sanitize the product and variant names for path safety but keep originals for barcode
+    let sanitized_product_name = sanitize_for_path(&product_name);
+    let sanitized_variant_name = sanitize_for_path(&variant_name);
+
+    // Use original names for barcode content
+    let product_name_trimmed = product_name.trim().to_uppercase();
+    let variant_name_trimmed = variant_name.trim().to_uppercase();
 
     log::info!(
         "Starting barcode generation for: {} ({})",
-        product_name,
-        variant_name
+        product_name_trimmed,
+        variant_name_trimmed
     );
 
-    // Create the barcode directories and get the save path
-    let save_path = prepare_barcode_path(&app_handle, &product_name, &variant_name)
-        .await
-        .map_err(|e| e.to_string())?;
+    // Create the barcode directories with sanitized names
+    let save_path = prepare_barcode_path(
+        &app_handle,
+        &sanitized_product_name,
+        &sanitized_variant_name,
+    )
+    .await
+    .map_err(|e| e.to_string())?;
 
-    // Create the barcode manager
-    let bm = BarcodeManager::new(&product_name, &variant_name).map_err(|e| {
+    // Create the barcode manager with original names (for barcode content)
+    let bm = BarcodeManager::new(&product_name_trimmed, &variant_name_trimmed).map_err(|e| {
         log::error!("Failed to create barcode manager: {e}");
         e.to_string()
     })?;
@@ -62,7 +93,10 @@ pub async fn generate_barcode(
         }
     });
 
-    log::info!("Barcode generation process completed for: {product_name}");
+    log::info!(
+        "Barcode generation process completed for: {}",
+        product_name_trimmed
+    );
     Ok(data)
 }
 

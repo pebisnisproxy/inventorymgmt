@@ -2,6 +2,7 @@
 
 import { zodResolver } from "@hookform/resolvers/zod";
 import { invoke } from "@tauri-apps/api/core";
+import { InfoIcon } from "lucide-react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useEffect, useState } from "react";
 import { useForm } from "react-hook-form";
@@ -18,6 +19,7 @@ import type {
 import { formatCurrency } from "@/lib/utils";
 
 import BarcodeDisplay from "@/components/barcode-display";
+import ImagePicker from "@/components/image-picker";
 import { Button } from "@/components/ui/button";
 import {
   Card,
@@ -232,6 +234,31 @@ export default function ProductDetailPage() {
     }
   }
 
+  async function handleImageSelected(imagePath: string) {
+    if (!product || !productId) return;
+
+    try {
+      const service = InventoryService.getInstance();
+      await service.initialize();
+
+      await service.updateProduct({
+        ...product,
+        image_path: imagePath
+      });
+
+      // Update local state
+      setProduct({
+        ...product,
+        image_path: imagePath
+      });
+
+      toast.success("Product image updated");
+    } catch (error) {
+      console.error("Failed to update product image:", error);
+      toast.error("Failed to update product image");
+    }
+  }
+
   if (isLoading) {
     return (
       <div className="container mx-auto py-8">
@@ -270,30 +297,56 @@ export default function ProductDetailPage() {
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             <div>
               <h3 className="text-lg font-medium mb-4">Informasi Produk</h3>
-              <div className="space-y-2">
-                <div>
-                  <span className="font-medium">Nama Produk:</span>{" "}
-                  {product.name}
-                </div>
-                <div>
-                  <span className="font-medium">Kategori:</span>{" "}
-                  {category ? category.name : "Tidak ada kategori"}
-                </div>
-                <div>
-                  <span className="font-medium">Harga Jual:</span>{" "}
-                  {formatCurrency(product.selling_price)}
-                </div>
-                <div>
-                  <span className="font-medium">Tanggal Dibuat:</span>{" "}
-                  {new Date(product.created_at).toLocaleDateString()}
-                </div>
-                <div>
-                  <span className="font-medium">Terakhir Diperbarui:</span>{" "}
-                  {new Date(product.updated_at).toLocaleDateString()}
-                </div>
-                <div>
-                  <span className="font-medium">ID Kategori:</span>{" "}
-                  {product.category_id || "Tidak ada kategori"}
+              <div className="flex flex-col md:flex-row gap-6 mb-6">
+                <ImagePicker
+                  productName={product.name}
+                  productHandle="main"
+                  initialImagePath={product.image_path}
+                  onImageSelected={handleImageSelected}
+                  width={200}
+                  height={200}
+                />
+                <div className="space-y-2">
+                  <div>
+                    <span className="font-medium">Nama Produk:</span>{" "}
+                    {product.name}
+                  </div>
+                  <div>
+                    <span className="font-medium">Kategori:</span>{" "}
+                    {category ? category.name : "Tidak ada kategori"}
+                  </div>
+                  <div>
+                    <span className="font-medium">Harga Jual:</span>{" "}
+                    {formatCurrency(product.selling_price)}
+                  </div>
+                  <div>
+                    <span className="font-medium">Tanggal Dibuat:</span>{" "}
+                    {new Date(product.created_at).toLocaleDateString()}
+                  </div>
+                  <div>
+                    <span className="font-medium">Terakhir Diperbarui:</span>{" "}
+                    {new Date(product.updated_at).toLocaleDateString()}
+                  </div>
+                  <div>
+                    <span className="font-medium">ID Kategori:</span>{" "}
+                    {product.category_id || "Tidak ada kategori"}
+                  </div>
+
+                  <div className="mt-4 p-3 bg-blue-50 border border-blue-200 rounded-md flex items-start gap-2">
+                    <InfoIcon
+                      className="text-blue-500 shrink-0 mt-0.5"
+                      size={16}
+                    />
+                    <div className="text-xs text-blue-700">
+                      <p className="font-medium mb-1">Catatan:</p>
+                      <p>
+                        Untuk masalah keamanan, nama file yang dihasilkan untuk
+                        gambar dan barcode akan dimodifikasi: karakter khusus
+                        diganti dengan tanda hubung, spasi diganti dengan garis
+                        bawah, dan dikonversi ke huruf besar.
+                      </p>
+                    </div>
+                  </div>
                 </div>
               </div>
             </div>
