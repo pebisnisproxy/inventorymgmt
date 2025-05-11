@@ -5,7 +5,7 @@ import { toast } from "sonner";
 
 import { InventoryManager } from "@/lib/inventory-manager";
 import inventoryService from "@/lib/inventory-service";
-import {
+import type {
   InventoryMovement,
   InventoryMovementItem,
   ProductVariantWithProduct,
@@ -151,7 +151,8 @@ export default function ProductInPage() {
     }
   }
 
-  useEffect(function () {
+  // biome-ignore lint/correctness/useExhaustiveDependencies: <explanation>
+  useEffect(() => {
     loadData();
     loadProducts();
   }, []);
@@ -181,13 +182,11 @@ export default function ProductInPage() {
             required
           >
             <option value="">Pilih Produk</option>
-            {products.map(function (product) {
-              return (
-                <option key={product.id} value={product.id}>
-                  {product.name}
-                </option>
-              );
-            })}
+            {products.map((product) => (
+              <option key={product.id} value={product.id}>
+                {product.name}
+              </option>
+            ))}
           </select>
           <select
             className="border rounded px-2 py-1"
@@ -197,14 +196,11 @@ export default function ProductInPage() {
             disabled={!selectedProductId}
           >
             <option value="">Pilih Varian</option>
-            {variants.map(function (variant) {
-              return (
-                <option key={variant.id} value={variant.id}>
-                  {variant.handle}{" "}
-                  {variant.barcode ? `(${variant.barcode})` : ""}
-                </option>
-              );
-            })}
+            {variants.map((variant) => (
+              <option key={variant.id} value={variant.id}>
+                {variant.handle} {variant.barcode ? `(${variant.barcode})` : ""}
+              </option>
+            ))}
           </select>
           <input
             type="number"
@@ -254,23 +250,21 @@ export default function ProductInPage() {
           </TableRow>
         </TableHeader>
         <TableBody>
-          {movements.map(function (movement) {
-            return movement.items.map(function (item, idx) {
-              return (
-                <TableRow key={movement.id + "-" + idx}>
-                  <TableCell>{movement.movement_date}</TableCell>
-                  <TableCell>{movement.id}</TableCell>
-                  <TableCell>{movement.notes}</TableCell>
-                  <TableCell>
-                    {item.product_name} ({item.handle})
-                  </TableCell>
-                  <TableCell>{item.quantity}</TableCell>
-                  <TableCell>{item.price_per_unit}</TableCell>
-                  <TableCell>{item.total_price}</TableCell>
-                </TableRow>
-              );
-            });
-          })}
+          {movements?.map((movement) =>
+            movement?.items?.map((item, idx) => (
+              <TableRow key={`${movement.id}-${idx}`}>
+                <TableCell>{movement.movement_date}</TableCell>
+                <TableCell>{movement.id}</TableCell>
+                <TableCell>{movement.notes}</TableCell>
+                <TableCell>
+                  {item.product_name} ({item.handle})
+                </TableCell>
+                <TableCell>{item.quantity}</TableCell>
+                <TableCell>{item.price_per_unit}</TableCell>
+                <TableCell>{item.total_price}</TableCell>
+              </TableRow>
+            ))
+          )}
         </TableBody>
         <TableFooter>
           <TableRow>

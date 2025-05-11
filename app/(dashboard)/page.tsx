@@ -13,7 +13,7 @@ import {
 } from "recharts";
 
 import { InventoryService } from "@/lib/inventory-service";
-import { Product } from "@/lib/types/database";
+import type { Product } from "@/lib/types/database";
 import { formatCurrency } from "@/lib/utils";
 
 import { StatsCard } from "@/components/stats-card";
@@ -47,7 +47,7 @@ export default function HomePage() {
   if (isLoading) {
     return (
       <div className="flex items-center justify-center h-full">
-        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
+        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary" />
       </div>
     );
   }
@@ -107,6 +107,7 @@ export default function HomePage() {
           <div className="h-[300px]">
             {chartData.length === 0 ? (
               <div className="h-full flex flex-col items-center justify-center text-muted-foreground">
+                {/* biome-ignore lint/a11y/noSvgWithoutTitle: <explanation> */}
                 <svg
                   xmlns="http://www.w3.org/2000/svg"
                   width="48"

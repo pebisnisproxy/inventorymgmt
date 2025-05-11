@@ -17,7 +17,7 @@ import { toast } from "sonner";
 
 import { InventoryService } from "@/lib/inventory-service";
 import { useProductStore } from "@/lib/store/product-store";
-import { Category, Product } from "@/lib/types/database";
+import type { Category } from "@/lib/types/database";
 import { cn } from "@/lib/utils";
 
 import { Button } from "@/components/ui/button";
@@ -121,6 +121,7 @@ export default function AppDashboard({
     }
   };
 
+  // biome-ignore lint/correctness/useExhaustiveDependencies: <explanation>
   useEffect(() => {
     loadData();
   }, []);
@@ -131,6 +132,7 @@ export default function AppDashboard({
   };
 
   // Reset select value when URL changes
+  // biome-ignore lint/correctness/useExhaustiveDependencies: <explanation>
   useEffect(() => {
     setSelectedValue("");
   }, [pathname]);
@@ -296,7 +298,12 @@ export default function AppDashboard({
             </Button>
           </div>
         </header>
-        <main className={cn("p-4 overflow-y-scroll h-max", isMobile && "p-2")}>
+        <main
+          className={cn(
+            "p-4 overflow-y-scroll h-[calc(100vh-4rem)]",
+            isMobile && "p-2"
+          )}
+        >
           {isLoading ? (
             <div className="flex items-center justify-center h-full">
               <div className="text-center">
