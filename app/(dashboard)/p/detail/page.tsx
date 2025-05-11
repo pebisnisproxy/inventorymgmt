@@ -1,11 +1,20 @@
 "use client";
 
+import { zodResolver } from "@hookform/resolvers/zod";
+import { invoke } from "@tauri-apps/api/core";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useEffect, useState } from "react";
+import { useForm } from "react-hook-form";
 import { toast } from "sonner";
+import * as z from "zod";
 
 import { InventoryService } from "@/lib/inventory-service";
-import { Category, Product } from "@/lib/types/database";
+import { GenerateBarcodeData } from "@/lib/types/common";
+import {
+  Category,
+  Product,
+  ProductVariantWithProduct
+} from "@/lib/types/database";
 import { formatCurrency } from "@/lib/utils";
 
 import { Button } from "@/components/ui/button";
@@ -16,6 +25,31 @@ import {
   CardHeader,
   CardTitle
 } from "@/components/ui/card";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle
+} from "@/components/ui/dialog";
+import {
+  Form,
+  FormControl,
+  FormField,
+  FormItem,
+  FormLabel,
+  FormMessage
+} from "@/components/ui/form";
+import { Input } from "@/components/ui/input";
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow
+} from "@/components/ui/table";
 
 export default function ProductDetailPage() {
   const router = useRouter();
@@ -24,6 +58,14 @@ export default function ProductDetailPage() {
   const [product, setProduct] = useState<Product | null>(null);
   const [category, setCategory] = useState<Category | null>(null);
   const [isLoading, setIsLoading] = useState(true);
+  const [variants, setVariants] = useState<ProductVariantWithProduct[]>([]);
+  const [variantLoading, setVariantLoading] = useState(true);
+  const [showVariantDialog, setShowVariantDialog] = useState(false);
+  const [editingVariant, setEditingVariant] =
+    useState<ProductVariantWithProduct | null>(null);
+  const [deletingVariant, setDeletingVariant] =
+    useState<ProductVariantWithProduct | null>(null);
+  const [deleteLoading, setDeleteLoading] = useState(false);
 
   useEffect(() => {
     const loadData = async () => {
@@ -61,6 +103,121 @@ export default function ProductDetailPage() {
 
     loadData();
   }, [productId, router]);
+
+  useEffect(() => {
+    if (!productId) return;
+    loadVariants();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [productId]);
+
+  async function loadVariants() {
+    setVariantLoading(true);
+    try {
+      const service = InventoryService.getInstance();
+      await service.initialize();
+      const result = await service.getProductVariants(productId);
+      setVariants(result);
+    } catch (error) {
+      toast.error("Gagal memuat varian produk");
+    } finally {
+      setVariantLoading(false);
+    }
+  }
+
+  function handleAddVariant() {
+    setEditingVariant(null);
+    setShowVariantDialog(true);
+  }
+
+  function handleEditVariant(variant: ProductVariantWithProduct) {
+    setEditingVariant(variant);
+    setShowVariantDialog(true);
+  }
+
+  function handleDeleteVariant(variant: ProductVariantWithProduct) {
+    setDeletingVariant(variant);
+  }
+
+  async function confirmDeleteVariant() {
+    if (!deletingVariant) return;
+    setDeleteLoading(true);
+    try {
+      const service = InventoryService.getInstance();
+      await service.initialize();
+      await service.deleteProductVariant(deletingVariant.id);
+      toast.success("Varian berhasil dihapus");
+      setDeletingVariant(null);
+      loadVariants();
+    } catch (error) {
+      toast.error("Gagal menghapus varian");
+    } finally {
+      setDeleteLoading(false);
+    }
+  }
+
+  // Variant form schema
+  const variantFormSchema = z.object({
+    handle: z.string().min(1, "Nama varian harus diisi"),
+    barcode: z.string().optional().nullable()
+  });
+  type VariantFormValues = z.infer<typeof variantFormSchema>;
+
+  const variantForm = useForm<VariantFormValues>({
+    resolver: zodResolver(variantFormSchema),
+    defaultValues: {
+      handle: editingVariant ? editingVariant.handle : "",
+      barcode: editingVariant ? editingVariant.barcode : ""
+    }
+  });
+
+  useEffect(() => {
+    if (editingVariant) {
+      variantForm.reset({
+        handle: editingVariant.handle,
+        barcode: editingVariant.barcode || ""
+      });
+    } else {
+      variantForm.reset({ handle: "", barcode: "" });
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [editingVariant, showVariantDialog]);
+
+  async function onSubmitVariant(values: VariantFormValues) {
+    try {
+      const service = InventoryService.getInstance();
+      await service.initialize();
+      if (editingVariant) {
+        await service.updateProductVariant({
+          id: editingVariant.id,
+          product_id: productId,
+          handle: values.handle,
+          barcode: values.barcode || null,
+          created_at: editingVariant.created_at,
+          updated_at: editingVariant.updated_at
+        });
+        toast.success("Varian berhasil diperbarui");
+      } else {
+        const generateBarcodeData = (await invoke("generate_barcode", {
+          productName: product?.name || "",
+          variantName: values.handle
+        })) as GenerateBarcodeData;
+        await service.createProductVariant({
+          product_id: productId,
+          handle: values.handle,
+          barcode:
+            `${generateBarcodeData.file_path}:${JSON.stringify(
+              generateBarcodeData.barcode
+            )}` || null
+        });
+        toast.success("Varian berhasil ditambahkan");
+      }
+      setShowVariantDialog(false);
+      loadVariants();
+    } catch (error) {
+      console.error(error);
+      toast.error("Gagal menyimpan varian");
+    }
+  }
 
   if (isLoading) {
     return (
@@ -185,6 +342,180 @@ export default function ProductDetailPage() {
             </div>
           </CardContent>
         </Card>
+
+        <Card>
+          <CardHeader>
+            <CardTitle className="text-xl">Varian Produk</CardTitle>
+            <CardDescription>Kelola varian untuk produk ini</CardDescription>
+          </CardHeader>
+          <CardContent>
+            <div className="flex justify-between mb-4">
+              <Button onClick={handleAddVariant}>Tambah Varian</Button>
+            </div>
+            {variantLoading ? (
+              <div className="text-center py-8">Memuat varian...</div>
+            ) : variants.length === 0 ? (
+              <div className="text-center py-8 text-muted-foreground">
+                Belum ada varian
+              </div>
+            ) : (
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead>Nama Varian</TableHead>
+                    <TableHead>Barcode</TableHead>
+                    <TableHead className="text-right">Aksi</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {variants.map(function (variant) {
+                    return (
+                      <TableRow key={variant.id}>
+                        <TableCell>{variant.handle}</TableCell>
+                        <TableCell>
+                          {variant.barcode || (
+                            <span className="text-muted-foreground">-</span>
+                          )}
+                        </TableCell>
+                        <TableCell className="text-right">
+                          <div className="flex gap-2 justify-end">
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              onClick={function () {
+                                handleEditVariant(variant);
+                              }}
+                            >
+                              Ubah
+                            </Button>
+                            <Button
+                              variant="destructive"
+                              size="sm"
+                              onClick={function () {
+                                handleDeleteVariant(variant);
+                              }}
+                            >
+                              Hapus
+                            </Button>
+                          </div>
+                        </TableCell>
+                      </TableRow>
+                    );
+                  })}
+                </TableBody>
+              </Table>
+            )}
+          </CardContent>
+        </Card>
+
+        {/* Add/Edit Variant Dialog */}
+        <Dialog open={showVariantDialog} onOpenChange={setShowVariantDialog}>
+          <DialogContent>
+            <DialogHeader>
+              <DialogTitle>
+                {editingVariant ? "Ubah Varian" : "Tambah Varian"}
+              </DialogTitle>
+              <DialogDescription>
+                {editingVariant
+                  ? "Edit detail varian produk."
+                  : "Tambah varian baru untuk produk ini."}
+              </DialogDescription>
+            </DialogHeader>
+            <Form {...variantForm}>
+              <form
+                onSubmit={variantForm.handleSubmit(onSubmitVariant)}
+                className="space-y-4"
+              >
+                <FormField
+                  control={variantForm.control}
+                  name="handle"
+                  render={function ({ field }) {
+                    return (
+                      <FormItem>
+                        <FormLabel>Nama Varian</FormLabel>
+                        <FormControl>
+                          <Input placeholder="Nama varian" {...field} />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    );
+                  }}
+                />
+                <FormField
+                  control={variantForm.control}
+                  name="barcode"
+                  render={function ({ field }) {
+                    return (
+                      <FormItem>
+                        <FormLabel>Barcode (auto generated)</FormLabel>
+                        <FormControl>
+                          <Input
+                            disabled
+                            placeholder="Barcode"
+                            {...field}
+                            value={field.value || ""}
+                          />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    );
+                  }}
+                />
+                <DialogFooter>
+                  <Button type="submit">
+                    {editingVariant ? "Simpan Perubahan" : "Tambah Varian"}
+                  </Button>
+                  <Button
+                    type="button"
+                    variant="outline"
+                    onClick={function () {
+                      setShowVariantDialog(false);
+                    }}
+                  >
+                    Batal
+                  </Button>
+                </DialogFooter>
+              </form>
+            </Form>
+          </DialogContent>
+        </Dialog>
+
+        {/* Delete Confirmation Dialog */}
+        <Dialog
+          open={!!deletingVariant}
+          onOpenChange={function (open) {
+            if (!open) setDeletingVariant(null);
+          }}
+        >
+          <DialogContent>
+            <DialogHeader>
+              <DialogTitle>Hapus Varian</DialogTitle>
+              <DialogDescription>
+                Apakah Anda yakin ingin menghapus varian{" "}
+                <b>{deletingVariant?.handle}</b>? Tindakan ini tidak dapat
+                dibatalkan.
+              </DialogDescription>
+            </DialogHeader>
+            <DialogFooter>
+              <Button
+                variant="destructive"
+                onClick={confirmDeleteVariant}
+                disabled={deleteLoading}
+              >
+                {deleteLoading ? "Menghapus..." : "Hapus"}
+              </Button>
+              <Button
+                variant="outline"
+                onClick={function () {
+                  setDeletingVariant(null);
+                }}
+                disabled={deleteLoading}
+              >
+                Batal
+              </Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
       </div>
     </div>
   );
