@@ -25,6 +25,7 @@ export interface ProductVariant {
   id: number;
   product_id: number;
   handle: string;
+  barcode_code: string | null;
   barcode: BarcodeData | null;
   barcode_path: string | null;
   created_at: string;

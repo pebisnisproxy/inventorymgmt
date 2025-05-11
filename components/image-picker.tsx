@@ -1,4 +1,5 @@
-import { Image as ImageIcon, Loader2 } from "lucide-react";
+import { revealItemInDir } from "@tauri-apps/plugin-opener";
+import { FolderOpen, Image as ImageIcon, Loader2 } from "lucide-react";
 import Image from "next/image";
 import { useCallback, useMemo, useState } from "react";
 import { toast } from "sonner";
@@ -69,6 +70,21 @@ export default function ImagePicker({
     [handlePickImage]
   );
 
+  // Function to open the image file in the system's file explorer
+  const handleOpenInExplorer = useCallback(async () => {
+    if (!imagePath) {
+      toast.error("No image selected");
+      return;
+    }
+
+    try {
+      await revealItemInDir(imagePath);
+    } catch (error) {
+      console.error("Error revealing image in file explorer:", error);
+      toast.error("Failed to open file location");
+    }
+  }, [imagePath]);
+
   return (
     <div className={cn("flex flex-col items-center", className)}>
       {imagePath ? (
@@ -85,15 +101,25 @@ export default function ImagePicker({
             }}
             className="rounded-md border border-gray-200"
           />
-          <Button
-            variant="outline"
-            size="sm"
-            className="absolute bottom-2 right-2 bg-white bg-opacity-75"
-            onClick={handlePickImage}
-            disabled={isLoading}
-          >
-            {isLoading ? <Loader2 className="animate-spin" /> : "Change"}
-          </Button>
+          <div className="absolute bottom-2 right-2 flex gap-2">
+            <Button
+              variant="outline"
+              size="sm"
+              className="bg-white bg-opacity-75"
+              onClick={handleOpenInExplorer}
+            >
+              <FolderOpen className="h-4 w-4" />
+            </Button>
+            <Button
+              variant="outline"
+              size="sm"
+              className="bg-white bg-opacity-75"
+              onClick={handlePickImage}
+              disabled={isLoading}
+            >
+              {isLoading ? <Loader2 className="animate-spin" /> : "Change"}
+            </Button>
+          </div>
         </div>
       ) : (
         <Button

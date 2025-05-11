@@ -9,6 +9,7 @@ use tauri::{AppHandle, Manager};
 pub struct GenerateBarcodeData {
     pub file_path: String,
     pub barcode: Barcode,
+    pub barcode_code: String,
 }
 
 /// Sanitizes a string for safe use in file paths
@@ -32,6 +33,12 @@ fn sanitize_for_path(input: &str) -> String {
     sanitized.to_uppercase().to_string()
 }
 
+/// Creates a barcode-safe string by removing spaces and ensuring it's a single word
+fn sanitize_for_barcode(input: &str) -> String {
+    // Remove spaces completely for a single word, and convert to uppercase
+    input.trim().replace(' ', "").to_uppercase()
+}
+
 #[tauri::command(async)]
 pub async fn generate_barcode(
     product_name: String,
@@ -42,14 +49,14 @@ pub async fn generate_barcode(
     let sanitized_product_name = sanitize_for_path(&product_name);
     let sanitized_variant_name = sanitize_for_path(&variant_name);
 
-    // Use original names for barcode content
-    let product_name_trimmed = product_name.trim().to_uppercase();
-    let variant_name_trimmed = variant_name.trim().to_uppercase();
+    // Use sanitized versions specifically formatted for barcodes
+    let product_name_for_barcode = sanitize_for_barcode(&product_name);
+    let variant_name_for_barcode = sanitize_for_barcode(&variant_name);
 
     log::info!(
         "Starting barcode generation for: {} ({})",
-        product_name_trimmed,
-        variant_name_trimmed
+        product_name_for_barcode,
+        variant_name_for_barcode
     );
 
     // Create the barcode directories with sanitized names
@@ -61,11 +68,12 @@ pub async fn generate_barcode(
     .await
     .map_err(|e| e.to_string())?;
 
-    // Create the barcode manager with original names (for barcode content)
-    let bm = BarcodeManager::new(&product_name_trimmed, &variant_name_trimmed).map_err(|e| {
-        log::error!("Failed to create barcode manager: {e}");
-        e.to_string()
-    })?;
+    // Create the barcode manager with barcode-safe names
+    let bm =
+        BarcodeManager::new(&product_name_for_barcode, &variant_name_for_barcode).map_err(|e| {
+            log::error!("Failed to create barcode manager: {e}");
+            e.to_string()
+        })?;
 
     // Generate barcode JSON data
     let barcode = bm.to_json().map_err(|e| {
@@ -73,10 +81,14 @@ pub async fn generate_barcode(
         e.to_string()
     })?;
 
+    // Create the barcode code string (what will be used for scanning)
+    let barcode_code = format!("{}-{}", product_name_for_barcode, variant_name_for_barcode);
+
     // Prepare response data
     let data = GenerateBarcodeData {
         file_path: save_path.to_str().unwrap_or_default().to_string(),
         barcode,
+        barcode_code,
     };
 
     log::debug!("Generated barcode data: {data:?}");
@@ -95,7 +107,7 @@ pub async fn generate_barcode(
 
     log::info!(
         "Barcode generation process completed for: {}",
-        product_name_trimmed
+        product_name_for_barcode
     );
     Ok(data)
 }

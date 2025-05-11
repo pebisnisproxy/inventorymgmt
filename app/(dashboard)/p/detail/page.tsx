@@ -160,7 +160,12 @@ export default function ProductDetailPage() {
 
   // Variant form schema
   const variantFormSchema = z.object({
-    handle: z.string().min(1, "Nama varian harus diisi"),
+    handle: z
+      .string()
+      .min(1, "Nama varian harus diisi")
+      .refine((value) => !value.includes(" "), {
+        message: "Nama varian harus satu kata tanpa spasi"
+      }),
     barcode_path: z.string().optional().nullable()
   });
   type VariantFormValues = z.infer<typeof variantFormSchema>;
@@ -190,11 +195,13 @@ export default function ProductDetailPage() {
     try {
       const service = InventoryService.getInstance();
       await service.initialize();
+
       if (editingVariant) {
         await service.updateProductVariant({
           id: editingVariant.id,
           product_id: productId,
           handle: values.handle,
+          barcode_code: editingVariant.barcode_code,
           barcode: editingVariant.barcode,
           barcode_path: values.barcode_path || null,
           created_at: editingVariant.created_at,
@@ -221,6 +228,7 @@ export default function ProductDetailPage() {
         await service.createProductVariant({
           product_id: productId,
           handle: values.handle,
+          barcode_code: generateBarcodeData.barcode_code,
           barcode: barcodeData,
           barcode_path: generateBarcodeData.file_path || null
         });
@@ -445,6 +453,7 @@ export default function ProductDetailPage() {
                             const service = InventoryService.getInstance();
                             await service.updateProductVariant({
                               ...variant,
+                              barcode_code: generateBarcodeData.barcode_code,
                               barcode_path: generateBarcodeData.file_path
                             });
 
@@ -494,6 +503,10 @@ export default function ProductDetailPage() {
                     <FormControl>
                       <Input placeholder="Nama varian" {...field} />
                     </FormControl>
+                    <p className="text-xs text-muted-foreground mt-1">
+                      Gunakan satu kata tanpa spasi (seperti: S, XL, Merah,
+                      Hitam). Ini digunakan untuk kode barcode dan identifikasi.
+                    </p>
                     <FormMessage />
                   </FormItem>
                 )}

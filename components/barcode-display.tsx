@@ -1,5 +1,10 @@
 import { convertFileSrc } from "@tauri-apps/api/core";
+import { revealItemInDir } from "@tauri-apps/plugin-opener";
+import { FolderOpen } from "lucide-react";
 import React from "react";
+import { toast } from "sonner";
+
+import { Button } from "@/components/ui/button";
 
 import BarcodeImage from "./barcode-image";
 
@@ -34,6 +39,16 @@ export default function BarcodeDisplay({
     }
   }, [barcodePath]);
 
+  // Function to open the barcode file in the system's file explorer
+  const handleOpenInExplorer = async () => {
+    try {
+      await revealItemInDir(barcodePath);
+    } catch (error) {
+      console.error("Error revealing barcode in file explorer:", error);
+      toast.error("Failed to open file location");
+    }
+  };
+
   return (
     <div className="flex flex-col items-center p-4 bg-white rounded-lg shadow">
       <h2 className="text-lg font-semibold mb-2">{productName}</h2>
@@ -46,9 +61,20 @@ export default function BarcodeDisplay({
         height={120}
         className="mb-2"
       />
-      <p className="text-xs text-gray-500 mt-2">
-        Barcode ID: {productName}-{productHandle}
-      </p>
+      <div className="flex items-center justify-between w-full mt-2">
+        <p className="text-xs text-gray-500">
+          Barcode ID: {productName}-{productHandle}
+        </p>
+        <Button
+          variant="outline"
+          size="sm"
+          className="flex items-center gap-1 text-xs"
+          onClick={handleOpenInExplorer}
+        >
+          <FolderOpen className="h-3 w-3" />
+          Open Location
+        </Button>
+      </div>
     </div>
   );
 }

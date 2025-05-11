@@ -35,6 +35,7 @@ export function BarcodeScannerDialog({
   const [foundProduct, setFoundProduct] =
     useState<ProductVariantWithProduct | null>(null);
   const [open, setOpen] = useState(false);
+  const [searchStatus, setSearchStatus] = useState<string | null>(null);
 
   const handleBarcodeChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     setBarcode(e.target.value);
@@ -55,24 +56,31 @@ export function BarcodeScannerDialog({
     }
 
     setIsLoading(true);
+    setSearchStatus("Mencari produk...");
+
     try {
       const service = InventoryService.getInstance();
       await service.initialize();
+
+      setSearchStatus("Mencari dengan barcode code...");
 
       // The barcode input could be a path or the actual barcode data
       const variant = await service.findProductVariantByBarcode(barcode);
 
       if (!variant) {
+        setSearchStatus("Produk tidak ditemukan");
         toast.error("Produk tidak ditemukan dengan barcode tersebut");
         return;
       }
 
+      setSearchStatus("Produk ditemukan!");
       setFoundProduct(variant);
       if (onProductFound) {
         onProductFound(variant);
       }
     } catch (error) {
       console.error("Error searching for barcode:", error);
+      setSearchStatus("Terjadi kesalahan saat mencari");
       toast.error("Gagal mencari produk");
     } finally {
       setIsLoading(false);
@@ -91,6 +99,7 @@ export function BarcodeScannerDialog({
   const resetForm = () => {
     setBarcode("");
     setFoundProduct(null);
+    setSearchStatus(null);
   };
 
   const handleDialogOpenChange = (open: boolean) => {
@@ -114,6 +123,20 @@ export function BarcodeScannerDialog({
           </DialogDescription>
         </DialogHeader>
         <div className="grid gap-4 py-4">
+          <div className="text-xs text-muted-foreground bg-slate-50 p-3 rounded-md border border-slate-200">
+            <span className="font-medium block mb-1">Format Barcode:</span>
+            Format barcode adalah{" "}
+            <span className="font-medium">NAMA_PRODUK-VARIAN</span> tanpa spasi,
+            misalnya:{" "}
+            <span className="font-mono bg-slate-100 px-1 rounded">
+              PRODUKSATU-XL
+            </span>{" "}
+            atau{" "}
+            <span className="font-mono bg-slate-100 px-1 rounded">
+              KEMEJA-HITAM
+            </span>
+          </div>
+
           <div className="grid grid-cols-4 items-center gap-4">
             <Label htmlFor="barcode" className="text-right">
               Barcode
@@ -139,13 +162,31 @@ export function BarcodeScannerDialog({
             </div>
           </div>
 
+          {searchStatus && !foundProduct && (
+            <div className="mt-2 text-sm">
+              <Badge
+                variant={isLoading ? "secondary" : "outline"}
+                className="mb-2"
+              >
+                Status: {searchStatus}
+              </Badge>
+              <p className="text-muted-foreground text-xs mt-1">
+                {isLoading
+                  ? "Sedang mencari produk berdasarkan kode barcode..."
+                  : searchStatus === "Produk tidak ditemukan"
+                    ? "Pastikan kode barcode yang dimasukkan benar. Anda juga dapat mencoba scan ulang barcode."
+                    : "Coba masukkan kode barcode yang tertera pada produk."}
+              </p>
+            </div>
+          )}
+
           {foundProduct && (
             <div className="mt-4 border rounded p-4">
               <h3 className="font-medium text-lg">
                 {foundProduct.product_name}
               </h3>
               <p className="text-sm text-gray-500">{foundProduct.handle}</p>
-              <div className="mt-2">
+              <div className="mt-2 flex flex-col gap-2">
                 <Badge variant="outline">
                   Harga:{" "}
                   {new Intl.NumberFormat("id-ID", {
@@ -153,6 +194,11 @@ export function BarcodeScannerDialog({
                     currency: "IDR"
                   }).format(foundProduct.selling_price)}
                 </Badge>
+                {foundProduct.barcode_code && (
+                  <Badge variant="secondary" className="text-xs">
+                    Kode Barcode: {foundProduct.barcode_code}
+                  </Badge>
+                )}
               </div>
             </div>
           )}

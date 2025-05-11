@@ -37,7 +37,7 @@ export class InventoryService {
   /**
    * Initialize the database connection
    */
-  public async initialize(dbPath = "sqlite:inventory-dev.db"): Promise<void> {
+  public async initialize(dbPath = "sqlite:inventory-dev2.db"): Promise<void> {
     try {
       this.db = await Database.load(dbPath);
       console.log("Database initialized successfully");
@@ -309,10 +309,11 @@ export class InventoryService {
   ): Promise<number> {
     if (!this.db) throw new Error("Database not initialized");
     const result = await this.db.execute(
-      "INSERT INTO product_variants (product_id, handle, barcode, barcode_path) VALUES (?, ?, ?, ?) RETURNING id",
+      "INSERT INTO product_variants (product_id, handle, barcode_code, barcode, barcode_path) VALUES (?, ?, ?, ?, ?) RETURNING id",
       [
         variant.product_id,
         variant.handle,
+        variant.barcode_code,
         variant.barcode,
         variant.barcode_path
       ]
@@ -331,8 +332,14 @@ export class InventoryService {
 
     try {
       await this.db.execute(
-        "UPDATE product_variants SET handle = ?, barcode = ?, barcode_path = ?, updated_at = CURRENT_TIMESTAMP WHERE id = ?",
-        [variant.handle, variant.barcode, variant.barcode_path, variant.id]
+        "UPDATE product_variants SET handle = ?, barcode_code = ?, barcode = ?, barcode_path = ?, updated_at = CURRENT_TIMESTAMP WHERE id = ?",
+        [
+          variant.handle,
+          variant.barcode_code,
+          variant.barcode,
+          variant.barcode_path,
+          variant.id
+        ]
       );
     } catch (error) {
       console.error(`Failed to update variant with ID ${variant.id}:`, error);
@@ -750,8 +757,27 @@ export class InventoryService {
   ): Promise<ProductVariantWithProduct | null> {
     if (!this.db) throw new Error("Database not initialized");
     try {
-      // First check if barcode matches the barcode_path
+      // First check if barcode matches the barcode_code field (priority search)
       let variants = await this.db.select<ProductVariantWithProduct[]>(
+        `
+        SELECT 
+          v.*,
+          p.name as product_name,
+          p.selling_price
+        FROM product_variants v
+        JOIN products p ON v.product_id = p.id
+        WHERE v.barcode_code = ?
+        LIMIT 1
+        `,
+        [barcode]
+      );
+
+      if (variants.length > 0) {
+        return variants[0];
+      }
+
+      // If not found by barcode_code, try the barcode_path
+      variants = await this.db.select<ProductVariantWithProduct[]>(
         `
         SELECT 
           v.*,
@@ -784,26 +810,10 @@ export class InventoryService {
         `
       );
 
-      // Since we can't easily query JSONB in SQLite, we'll filter in JS
-      // Look for variants with barcode content matching this code
-      const matchingVariant = variants.find((variant) => {
-        // Check if the barcode contains the search string
-        if (!variant.barcode) return false;
-        try {
-          // Attempt different matching strategies
-          const barcodeStr = JSON.stringify(variant.barcode);
-          return barcodeStr.includes(barcode);
-        } catch (e) {
-          return false;
-        }
-      });
-
-      return matchingVariant || null;
+      // Return null if no matching variant found
+      return null;
     } catch (error) {
-      console.error(
-        `Failed to find product variant by barcode ${barcode}:`,
-        error
-      );
+      console.error("Error finding product variant by barcode:", error);
       throw error;
     }
   }

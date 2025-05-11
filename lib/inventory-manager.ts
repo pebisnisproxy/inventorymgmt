@@ -19,7 +19,7 @@ export class InventoryManager {
    * Initialize the inventory manager
    */
   public static async initialize(
-    dbPath = "sqlite:inventory-dev.db"
+    dbPath = "sqlite:inventory-dev2.db"
   ): Promise<void> {
     await inventoryService.initialize(dbPath);
   }
@@ -234,6 +234,7 @@ export class InventoryManager {
       await inventoryService.createProductVariant({
         product_id: productId,
         handle: variant.handle,
+        barcode_code: variant.barcode_code,
         barcode: variant.barcode,
         barcode_path: variant.barcode_path
       });

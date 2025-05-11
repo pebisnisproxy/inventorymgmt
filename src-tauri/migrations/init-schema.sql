@@ -31,6 +31,7 @@ CREATE TABLE IF NOT EXISTS product_variants (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
     product_id INTEGER NOT NULL,
     handle TEXT NOT NULL,  -- This appears to be the variant number/identifier (31, 32, 33, etc.)
+    barcode_code TEXT,     -- Added new column to store the actual barcode string value for scanning
     barcode JSONB,
     barcode_path TEXT,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
@@ -94,6 +95,7 @@ END;
 -- So we need to check if they exist first
 CREATE INDEX IF NOT EXISTS idx_products_category ON products(category_id);
 CREATE INDEX IF NOT EXISTS idx_variants_product ON product_variants(product_id);
+CREATE INDEX IF NOT EXISTS idx_variants_barcode_code ON product_variants(barcode_code);
 CREATE INDEX IF NOT EXISTS idx_movement_items_movement ON inventory_movement_items(movement_id);
 CREATE INDEX IF NOT EXISTS idx_movement_items_variant ON inventory_movement_items(product_variant_id);
 CREATE INDEX IF NOT EXISTS idx_movements_type_date ON inventory_movements(movement_type, movement_date);
