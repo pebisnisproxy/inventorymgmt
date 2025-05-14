@@ -1,3 +1,8 @@
+/**
+ * Copyright (c) LichtLabs.
+ * SPDX-License-Identifier: Apache-2.0
+ */
+
 "use client";
 
 import { Barcode } from "lucide-react";
@@ -9,6 +14,11 @@ import type { ProductVariantWithProduct } from "@/lib/types/database";
 import { BarcodeScannerDialog } from "@/components/barcode-scanner-dialog";
 import { DatePicker } from "@/components/date-picker";
 import { Button } from "@/components/ui/button";
+
+/**
+ * Copyright (c) LichtLabs.
+ * SPDX-License-Identifier: Apache-2.0
+ */
 
 // Create a context to share date filter values between layout and pages
 interface DateFilterContextType {

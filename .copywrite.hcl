@@ -10,9 +10,11 @@ project {
   header_ignore = [
     ".cargo/**",
     ".github/**",
+    ".next/**",
     "app/components/ui/**",
-    "*.json",
+    "src-tauri/target/**",
+    "out/**",
     "*.yaml",
-    "src-tauri/target/**"
+    "*.json",
   ]
 }

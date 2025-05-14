@@ -1,8 +1,18 @@
+/**
+ * Copyright (c) LichtLabs.
+ * SPDX-License-Identifier: Apache-2.0
+ */
+
 "use client";
 
 import * as React from "react";
 
 import { cn } from "@/lib/utils";
+
+/**
+ * Copyright (c) LichtLabs.
+ * SPDX-License-Identifier: Apache-2.0
+ */
 
 function Table({ className, ...props }: React.ComponentProps<"table">) {
   return (

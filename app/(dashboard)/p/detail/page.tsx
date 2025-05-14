@@ -1,3 +1,8 @@
+/**
+ * Copyright (c) LichtLabs.
+ * SPDX-License-Identifier: Apache-2.0
+ */
+
 "use client";
 
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -53,6 +58,11 @@ import {
   TableHeader,
   TableRow
 } from "@/components/ui/table";
+
+/**
+ * Copyright (c) LichtLabs.
+ * SPDX-License-Identifier: Apache-2.0
+ */
 
 export default function ProductDetailPage() {
   const router = useRouter();

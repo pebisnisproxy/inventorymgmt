@@ -1,3 +1,8 @@
+/**
+ * Copyright (c) LichtLabs.
+ * SPDX-License-Identifier: Apache-2.0
+ */
+
 "use client";
 
 import {
@@ -29,6 +34,11 @@ import {
   CardHeader,
   CardTitle
 } from "@/components/ui/card";
+
+/**
+ * Copyright (c) LichtLabs.
+ * SPDX-License-Identifier: Apache-2.0
+ */
 
 export default function ProductsPage() {
   const [products, setProducts] = useState<Product[]>([]);

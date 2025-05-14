@@ -1,3 +1,6 @@
+// Copyright (c) LichtLabs.
+// SPDX-License-Identifier: Apache-2.0
+
 use serde::Deserialize;
 
 #[derive(Debug, Clone, Deserialize)]

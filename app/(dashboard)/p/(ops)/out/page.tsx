@@ -1,3 +1,8 @@
+/**
+ * Copyright (c) LichtLabs.
+ * SPDX-License-Identifier: Apache-2.0
+ */
+
 "use client";
 
 import { useRouter, useSearchParams } from "next/navigation";
@@ -27,6 +32,11 @@ import {
 } from "@/components/ui/table";
 
 import { useDateFilter } from "../layout";
+
+/**
+ * Copyright (c) LichtLabs.
+ * SPDX-License-Identifier: Apache-2.0
+ */
 
 interface MovementWithItems extends InventoryMovement {
   items: Array<

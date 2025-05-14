@@ -1,3 +1,8 @@
+/**
+ * Copyright (c) LichtLabs.
+ * SPDX-License-Identifier: Apache-2.0
+ */
+
 "use client";
 
 import {
@@ -36,6 +41,11 @@ import {
   SelectTrigger,
   SelectValue
 } from "@/components/ui/select";
+
+/**
+ * Copyright (c) LichtLabs.
+ * SPDX-License-Identifier: Apache-2.0
+ */
 
 const navigations = [
   {

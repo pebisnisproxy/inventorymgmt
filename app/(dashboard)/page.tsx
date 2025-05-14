@@ -1,3 +1,8 @@
+/**
+ * Copyright (c) LichtLabs.
+ * SPDX-License-Identifier: Apache-2.0
+ */
+
 "use client";
 
 import { Boxes, Package, PackageOpen, Undo2 } from "lucide-react";
@@ -22,6 +27,11 @@ import { formatCurrency } from "@/lib/utils";
 
 import { DatePicker } from "@/components/date-picker";
 import { StatsCard } from "@/components/stats-card";
+
+/**
+ * Copyright (c) LichtLabs.
+ * SPDX-License-Identifier: Apache-2.0
+ */
 
 interface ChartData {
   name: string;

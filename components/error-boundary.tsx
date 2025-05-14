@@ -1,3 +1,8 @@
+/**
+ * Copyright (c) LichtLabs.
+ * SPDX-License-Identifier: Apache-2.0
+ */
+
 "use client";
 
 import { openUrl } from "@tauri-apps/plugin-opener";
@@ -5,6 +10,11 @@ import { AlertTriangle, ArrowLeft, Mail } from "lucide-react";
 import { Component, type ErrorInfo, type ReactNode } from "react";
 
 import { Button } from "@/components/ui/button";
+
+/**
+ * Copyright (c) LichtLabs.
+ * SPDX-License-Identifier: Apache-2.0
+ */
 
 interface Props {
   children: ReactNode;

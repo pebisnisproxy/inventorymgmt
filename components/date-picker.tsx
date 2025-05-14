@@ -1,3 +1,8 @@
+/**
+ * Copyright (c) LichtLabs.
+ * SPDX-License-Identifier: Apache-2.0
+ */
+
 "use client";
 
 import { format } from "date-fns";
@@ -14,6 +19,11 @@ import {
   PopoverContent,
   PopoverTrigger
 } from "@/components/ui/popover";
+
+/**
+ * Copyright (c) LichtLabs.
+ * SPDX-License-Identifier: Apache-2.0
+ */
 
 interface DatePickerProps {
   onDateChange?: (dates: { startDate?: string; endDate?: string }) => void;

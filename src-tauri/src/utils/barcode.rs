@@ -1,3 +1,6 @@
+// Copyright (c) LichtLabs.
+// SPDX-License-Identifier: Apache-2.0
+
 use anyhow::{Context, Result};
 use barcoders::generators::image::*;
 use barcoders::generators::json::*;

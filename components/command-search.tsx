@@ -1,3 +1,8 @@
+/**
+ * Copyright (c) LichtLabs.
+ * SPDX-License-Identifier: Apache-2.0
+ */
+
 "use client";
 
 import { FileText, Package, Search, Tag } from "lucide-react";
@@ -22,6 +27,11 @@ import {
   CommandSeparator,
   CommandShortcut
 } from "@/components/ui/command";
+
+/**
+ * Copyright (c) LichtLabs.
+ * SPDX-License-Identifier: Apache-2.0
+ */
 
 interface CommandSearchProps {
   children?: React.ReactNode;

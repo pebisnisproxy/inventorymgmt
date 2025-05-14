@@ -1,3 +1,8 @@
+/**
+ * Copyright (c) LichtLabs.
+ * SPDX-License-Identifier: Apache-2.0
+ */
+
 "use client";
 
 import { ChevronLeft, ChevronRight } from "lucide-react";
@@ -7,6 +12,11 @@ import { DayPicker } from "react-day-picker";
 import { cn } from "@/lib/utils";
 
 import { buttonVariants } from "@/components/ui/button";
+
+/**
+ * Copyright (c) LichtLabs.
+ * SPDX-License-Identifier: Apache-2.0
+ */
 
 function Calendar({
   className,
