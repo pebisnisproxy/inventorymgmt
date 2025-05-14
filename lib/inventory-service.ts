@@ -37,7 +37,7 @@ export class InventoryService {
   /**
    * Initialize the database connection
    */
-  public async initialize(dbPath = "sqlite:inventory-dev2.db"): Promise<void> {
+  public async initialize(dbPath = "sqlite:inventorymgmt.db"): Promise<void> {
     try {
       this.db = await Database.load(dbPath);
       console.log("Database initialized successfully");

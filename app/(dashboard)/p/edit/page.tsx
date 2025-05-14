@@ -9,7 +9,7 @@ import * as z from "zod";
 
 import { InventoryService } from "@/lib/inventory-service";
 import { useProductStore } from "@/lib/store/product-store";
-import { Category, Product } from "@/lib/types/database";
+import type { Category, Product } from "@/lib/types/database";
 
 import { Button } from "@/components/ui/button";
 import {
@@ -75,7 +75,7 @@ export default function EditProductPage() {
       const product = products.find((p: Product) => p.id === id);
       if (product) {
         form.reset({
-          id: product.id!,
+          id: product.id,
           name: product.name,
           category_id: product.category_id,
           selling_price: product.selling_price
@@ -114,6 +114,7 @@ export default function EditProductPage() {
             onClick={() => router.push("/p")}
             className="flex items-center gap-2"
           >
+            {/* biome-ignore lint/a11y/noSvgWithoutTitle: <explanation> */}
             <svg
               xmlns="http://www.w3.org/2000/svg"
               width="16"
