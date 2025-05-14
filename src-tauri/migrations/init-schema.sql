@@ -74,19 +74,16 @@ DROP TRIGGER IF EXISTS update_stock_on_movement_insert;
 -- Create trigger to update inventory stock when movement items are added
 CREATE TRIGGER update_stock_on_movement_insert AFTER INSERT ON inventory_movement_items
 BEGIN
-    -- For incoming products (IN)
+    -- Only update inventory for IN and OUT movements, not RETURN
     INSERT INTO inventory_stock (product_variant_id, quantity)
     SELECT NEW.product_variant_id,
            CASE WHEN (SELECT movement_type FROM inventory_movements WHERE id = NEW.movement_id) = 'IN' THEN NEW.quantity
-                WHEN (SELECT movement_type FROM inventory_movements WHERE id = NEW.movement_id) = 'RETURN' THEN NEW.quantity
                 ELSE 0 END
     ON CONFLICT(product_variant_id) DO UPDATE SET
         quantity = quantity + (CASE WHEN (SELECT movement_type FROM inventory_movements WHERE id = NEW.movement_id) = 'IN'
                                     THEN NEW.quantity
                                     WHEN (SELECT movement_type FROM inventory_movements WHERE id = NEW.movement_id) = 'OUT'
                                     THEN -NEW.quantity
-                                    WHEN (SELECT movement_type FROM inventory_movements WHERE id = NEW.movement_id) = 'RETURN'
-                                    THEN NEW.quantity
                                     ELSE 0 END),
         last_updated = CURRENT_TIMESTAMP;
 END;
