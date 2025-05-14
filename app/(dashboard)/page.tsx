@@ -13,7 +13,11 @@ import {
 } from "recharts";
 
 import { InventoryService } from "@/lib/inventory-service";
-import type { Product } from "@/lib/types/database";
+import type {
+  InventoryMovementItem,
+  Product,
+  ProductVariant
+} from "@/lib/types/database";
 import { formatCurrency } from "@/lib/utils";
 
 import { StatsCard } from "@/components/stats-card";
@@ -26,6 +30,7 @@ interface ChartData {
 export default function HomePage() {
   const [products, setProducts] = useState<Product[]>([]);
   const [isLoading, setIsLoading] = useState(true);
+  const [chartData, setChartData] = useState<ChartData[]>([]);
 
   useEffect(() => {
     const loadData = async () => {
@@ -34,6 +39,49 @@ export default function HomePage() {
         await service.initialize();
         const productsData = await service.getAllProducts();
         setProducts(productsData);
+
+        // Fetch all product variants for mapping
+        let allVariants: ProductVariant[] = [];
+        for (const product of productsData) {
+          const variants = await service.getProductVariants(product.id);
+          allVariants = allVariants.concat(variants);
+        }
+        const variantToProduct: Record<number, number> = {};
+        for (const variant of allVariants) {
+          variantToProduct[variant.id] = variant.product_id;
+        }
+
+        // Fetch all OUT movements
+        const outMovements = await service.getInventoryMovements("OUT");
+        let allItems: InventoryMovementItem[] = [];
+        for (const movement of outMovements) {
+          const items = await service.getMovementItems(movement.id);
+          allItems = allItems.concat(items);
+        }
+        // Aggregate total quantity per product (not variant)
+        const productTotals: Record<number, number> = {};
+        for (const item of allItems) {
+          const productId = variantToProduct[item.product_variant_id];
+          if (!productId) continue;
+          if (!productTotals[productId]) {
+            productTotals[productId] = 0;
+          }
+          productTotals[productId] += item.quantity;
+        }
+        // Map to chart data (show top 10 by quantity)
+        const chartArr: ChartData[] = Object.entries(productTotals)
+          .map(([productId, qty]) => {
+            const product = productsData.find(
+              (p) => p.id === Number(productId)
+            );
+            return {
+              name: product ? product.name : `Produk ${productId}`,
+              value: qty
+            };
+          })
+          .sort((a, b) => b.value - a.value)
+          .slice(0, 10);
+        setChartData(chartArr);
       } catch (error) {
         console.error("Gagal memuat data:", error);
       } finally {
@@ -59,12 +107,6 @@ export default function HomePage() {
     0
   );
   const averagePrice = totalProducts > 0 ? totalValue / totalProducts : 0;
-
-  // Data untuk grafik
-  const chartData: ChartData[] = products.map((product) => ({
-    name: product.name,
-    value: product.selling_price
-  }));
 
   return (
     <div className="space-y-6">
@@ -103,7 +145,9 @@ export default function HomePage() {
 
       <div className="grid gap-4 md:grid-cols-2">
         <div className="rounded-lg border bg-card p-6">
-          <h3 className="text-lg font-medium mb-4">Distribusi Harga Produk</h3>
+          <h3 className="text-lg font-medium mb-4">
+            10 Produk Paling Sering Keluar
+          </h3>
           <div className="h-[300px]">
             {chartData.length === 0 ? (
               <div className="h-full flex flex-col items-center justify-center text-muted-foreground">
@@ -123,10 +167,8 @@ export default function HomePage() {
                   <path d="M3 3v18h18" />
                   <path d="M18.7 8l-5.1 5.2-2.8-2.7L7 14.3" />
                 </svg>
-                <p>Belum ada data produk</p>
-                <p className="text-sm">
-                  Tambahkan produk untuk melihat distribusi harga
-                </p>
+                <p>Belum ada data produk keluar</p>
+                <p className="text-sm">Belum ada transaksi produk keluar</p>
               </div>
             ) : (
               <ResponsiveContainer width="100%" height="100%">
@@ -135,7 +177,7 @@ export default function HomePage() {
                   <XAxis dataKey="name" />
                   <YAxis />
                   <Tooltip
-                    formatter={(value: number) => formatCurrency(value)}
+                    formatter={(value: number) => value}
                     labelFormatter={(label: string) => `Produk: ${label}`}
                   />
                   <Bar dataKey="value" fill="#8884d8" />
