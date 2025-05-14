@@ -182,10 +182,10 @@ export class ErrorBoundary extends Component<Props, State> {
               Jika masalah terus berlanjut, silakan hubungi administrator sistem
               di{" "}
               <a
-                href="mailto:support@lichtlabs.com"
+                href="mailto:sena@lichtlabs.org"
                 className="text-blue-600 hover:underline"
               >
-                support@lichtlabs.com
+                sena@lichtlabs.org
               </a>
             </p>
           </div>

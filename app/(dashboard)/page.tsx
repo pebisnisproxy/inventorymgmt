@@ -20,6 +20,7 @@ import type {
 } from "@/lib/types/database";
 import { formatCurrency } from "@/lib/utils";
 
+import { DatePicker } from "@/components/date-picker";
 import { StatsCard } from "@/components/stats-card";
 
 interface ChartData {
@@ -31,6 +32,10 @@ export default function HomePage() {
   const [products, setProducts] = useState<Product[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [chartData, setChartData] = useState<ChartData[]>([]);
+  const [dateFilter, setDateFilter] = useState<{
+    startDate?: string;
+    endDate?: string;
+  }>({});
 
   useEffect(() => {
     const loadData = async () => {
@@ -38,7 +43,28 @@ export default function HomePage() {
         const service = InventoryService.getInstance();
         await service.initialize();
         const productsData = await service.getAllProducts();
-        setProducts(productsData);
+        // Filter produk berdasarkan created_at dan dateFilter
+        let filteredProducts = productsData;
+        if (dateFilter.startDate || dateFilter.endDate) {
+          function isProductInDateRange(product: Product) {
+            const createdAt = new Date(product.created_at);
+            if (
+              dateFilter.startDate &&
+              createdAt < new Date(dateFilter.startDate)
+            ) {
+              return false;
+            }
+            if (
+              dateFilter.endDate &&
+              createdAt > new Date(dateFilter.endDate)
+            ) {
+              return false;
+            }
+            return true;
+          }
+          filteredProducts = productsData.filter(isProductInDateRange);
+        }
+        setProducts(filteredProducts);
 
         // Fetch all product variants for mapping
         let allVariants: ProductVariant[] = [];
@@ -51,8 +77,12 @@ export default function HomePage() {
           variantToProduct[variant.id] = variant.product_id;
         }
 
-        // Fetch all OUT movements
-        const outMovements = await service.getInventoryMovements("OUT");
+        // Fetch all OUT movements with date filter
+        const outMovements = await service.getInventoryMovements(
+          "OUT",
+          dateFilter.startDate,
+          dateFilter.endDate
+        );
         let allItems: InventoryMovementItem[] = [];
         for (const movement of outMovements) {
           const items = await service.getMovementItems(movement.id);
@@ -90,7 +120,7 @@ export default function HomePage() {
     };
 
     loadData();
-  }, []);
+  }, [dateFilter]);
 
   if (isLoading) {
     return (
@@ -102,51 +132,56 @@ export default function HomePage() {
 
   // Hitung statistik
   const totalProducts = products.length;
-  const totalValue = products.reduce(
-    (sum, product) => sum + product.selling_price,
-    0
-  );
+  function sumSellingPrice(sum: number, product: Product) {
+    return sum + product.selling_price;
+  }
+  const totalValue = products.reduce(sumSellingPrice, 0);
   const averagePrice = totalProducts > 0 ? totalValue / totalProducts : 0;
 
   return (
     <div className="space-y-6">
-      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
-        <StatsCard
-          title="Total Produk"
-          value={totalProducts}
-          description="Jumlah produk dalam inventory"
-          icon={<Boxes className="h-4 w-4 text-muted-foreground" />}
-        />
-        <StatsCard
-          title="Total Nilai"
-          value={formatCurrency(totalValue)}
-          description="Total nilai inventory"
-          icon={<Package className="h-4 w-4 text-muted-foreground" />}
-        />
-        <StatsCard
-          title="Rata-rata Harga"
-          value={formatCurrency(averagePrice)}
-          description="Harga rata-rata per produk"
-          icon={<PackageOpen className="h-4 w-4 text-muted-foreground" />}
-        />
-        <StatsCard
-          title="Produk Tertinggi"
-          value={
-            products.length > 0
-              ? formatCurrency(
-                  Math.max(...products.map((p) => p.selling_price))
-                )
-              : 0
-          }
-          description="Harga produk tertinggi"
-          icon={<Undo2 className="h-4 w-4 text-muted-foreground" />}
-        />
+      <div className="flex-shrink-0">
+        <DatePicker onDateChange={setDateFilter} />
+      </div>
+      <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
+        <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4 flex-1">
+          <StatsCard
+            title="Total Produk"
+            value={totalProducts}
+            description="Jumlah produk dalam inventory"
+            icon={<Boxes className="h-4 w-4 text-muted-foreground" />}
+          />
+          <StatsCard
+            title="Total Nilai"
+            value={formatCurrency(totalValue)}
+            description="Total nilai inventory"
+            icon={<Package className="h-4 w-4 text-muted-foreground" />}
+          />
+          <StatsCard
+            title="Rata-rata Harga"
+            value={formatCurrency(averagePrice)}
+            description="Harga rata-rata per produk"
+            icon={<PackageOpen className="h-4 w-4 text-muted-foreground" />}
+          />
+          <StatsCard
+            title="Produk Tertinggi"
+            value={
+              products.length > 0
+                ? formatCurrency(
+                    Math.max(...products.map((p) => p.selling_price))
+                  )
+                : 0
+            }
+            description="Harga produk tertinggi"
+            icon={<Undo2 className="h-4 w-4 text-muted-foreground" />}
+          />
+        </div>
       </div>
 
       <div className="grid gap-4 md:grid-cols-2">
         <div className="rounded-lg border bg-card p-6">
           <h3 className="text-lg font-medium mb-4">
-            10 Produk Paling Sering Keluar
+            Produk Paling Sering Keluar
           </h3>
           <div className="h-[300px]">
             {chartData.length === 0 ? (
