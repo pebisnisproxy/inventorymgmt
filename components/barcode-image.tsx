@@ -1,7 +1,3 @@
-/**
- * Copyright (c) LichtLabs.
- * SPDX-License-Identifier: Apache-2.0
- */
 import Image from "next/image";
 
 import { useBarcodeImage } from "@/lib/hooks/use-barcode-image";

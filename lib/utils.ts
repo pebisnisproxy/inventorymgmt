@@ -1,7 +1,3 @@
-/**
- * Copyright (c) LichtLabs.
- * SPDX-License-Identifier: Apache-2.0
- */
 import { Image } from "@tauri-apps/api/image";
 import { exists } from "@tauri-apps/plugin-fs";
 import { type ClassValue, clsx } from "clsx";

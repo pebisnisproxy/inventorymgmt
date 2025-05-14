@@ -1,8 +1,3 @@
-/**
- * Copyright (c) LichtLabs.
- * SPDX-License-Identifier: Apache-2.0
- */
-
 "use client";
 
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -33,11 +28,6 @@ import {
   SelectTrigger,
   SelectValue
 } from "@/components/ui/select";
-
-/**
- * Copyright (c) LichtLabs.
- * SPDX-License-Identifier: Apache-2.0
- */
 
 const productFormSchema = z.object({
   id: z.number(),

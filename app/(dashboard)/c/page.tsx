@@ -1,8 +1,3 @@
-/**
- * Copyright (c) LichtLabs.
- * SPDX-License-Identifier: Apache-2.0
- */
-
 "use client";
 
 import { useRouter, useSearchParams } from "next/navigation";
@@ -22,11 +17,6 @@ import {
   TableHeader,
   TableRow
 } from "@/components/ui/table";
-
-/**
- * Copyright (c) LichtLabs.
- * SPDX-License-Identifier: Apache-2.0
- */
 
 export default function CategoryPage() {
   const router = useRouter();

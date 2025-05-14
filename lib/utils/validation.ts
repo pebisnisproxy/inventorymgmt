@@ -1,7 +1,3 @@
-/**
- * Copyright (c) LichtLabs.
- * SPDX-License-Identifier: Apache-2.0
- */
 import { toast } from "sonner";
 
 /**

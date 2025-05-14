@@ -1,6 +1,3 @@
-// Copyright (c) LichtLabs.
-// SPDX-License-Identifier: Apache-2.0
-
 use crate::utils::barcode::{Barcode, BarcodeManager};
 use anyhow::Context;
 use regex::Regex;

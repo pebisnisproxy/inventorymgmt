@@ -1,8 +1,3 @@
-/**
- * Copyright (c) LichtLabs.
- * SPDX-License-Identifier: Apache-2.0
- */
-
 "use client";
 
 import * as LabelPrimitive from "@radix-ui/react-label";
@@ -21,11 +16,6 @@ import {
 import { cn } from "@/lib/utils";
 
 import { Label } from "@/components/ui/label";
-
-/**
- * Copyright (c) LichtLabs.
- * SPDX-License-Identifier: Apache-2.0
- */
 
 const Form = FormProvider;
 

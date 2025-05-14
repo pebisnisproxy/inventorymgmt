@@ -1,16 +1,6 @@
-/**
- * Copyright (c) LichtLabs.
- * SPDX-License-Identifier: Apache-2.0
- */
-
 "use client";
 
 import { useEffect } from "react";
-
-/**
- * Copyright (c) LichtLabs.
- * SPDX-License-Identifier: Apache-2.0
- */
 
 export default function ErrorTest() {
   useEffect(() => {

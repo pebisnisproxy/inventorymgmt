@@ -1,8 +1,3 @@
-/**
- * Copyright (c) LichtLabs.
- * SPDX-License-Identifier: Apache-2.0
- */
-
 "use client";
 
 import { openUrl } from "@tauri-apps/plugin-opener";
@@ -10,11 +5,6 @@ import { AlertTriangle, ArrowLeft, Mail } from "lucide-react";
 import Link from "next/link";
 
 import { Button } from "@/components/ui/button";
-
-/**
- * Copyright (c) LichtLabs.
- * SPDX-License-Identifier: Apache-2.0
- */
 
 export default function GlobalError({
   error,

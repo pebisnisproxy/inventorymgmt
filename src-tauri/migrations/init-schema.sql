@@ -1,6 +1,3 @@
--- Copyright (c) LichtLabs.
--- SPDX-License-Identifier: Apache-2.0
-
 /* Inventory Management Database Migration Script
    This script includes safety checks to ensure it can be run multiple times
    without causing errors if tables already exist.

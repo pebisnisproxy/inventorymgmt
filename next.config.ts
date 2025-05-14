@@ -1,7 +1,3 @@
-/**
- * Copyright (c) LichtLabs.
- * SPDX-License-Identifier: Apache-2.0
- */
 import type { NextConfig } from "next";
 
 const isProd = process.env.NODE_ENV === "production";

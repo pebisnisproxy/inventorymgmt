@@ -1,6 +1,3 @@
-// Copyright (c) LichtLabs.
-// SPDX-License-Identifier: Apache-2.0
-
 mod commands;
 mod config;
 pub mod utils;

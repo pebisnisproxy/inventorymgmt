@@ -1,8 +1,3 @@
-/**
- * Copyright (c) LichtLabs.
- * SPDX-License-Identifier: Apache-2.0
- */
-
 "use client";
 
 import { useRouter, useSearchParams } from "next/navigation";
@@ -12,11 +7,6 @@ import { toast } from "sonner";
 import { useProductStore } from "@/lib/store/product-store";
 
 import { Button } from "@/components/ui/button";
-
-/**
- * Copyright (c) LichtLabs.
- * SPDX-License-Identifier: Apache-2.0
- */
 
 export default function DeleteProductPage() {
   const router = useRouter();
