@@ -1,6 +1,10 @@
 {
   "name": "inventorymgmt",
   "version": "0.1.0",
+  "description": "Inventory Management System",
+  "author": "sena@lichtlabs.org",
+  "license": "GPL-3.0",
+  "repository": "https://github.com/lichtlabs/inventorymgmt",
   "private": true,
   "scripts": {
     "dev": "next dev --turbopack",
