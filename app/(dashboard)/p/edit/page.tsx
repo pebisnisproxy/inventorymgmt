@@ -9,7 +9,7 @@ import * as z from "zod";
 
 import { InventoryService } from "@/lib/inventory-service";
 import { useProductStore } from "@/lib/store/product-store";
-import { Category, Product } from "@/lib/types/database";
+import type { Product } from "@/lib/types/database";
 
 import { Button } from "@/components/ui/button";
 import {
@@ -32,7 +32,6 @@ import {
 const productFormSchema = z.object({
   id: z.number(),
   name: z.string().min(1, "Nama harus diisi"),
-  category_id: z.number().nullable(),
   selling_price: z.number().min(0, "Harga harus positif")
 });
 
@@ -43,41 +42,23 @@ export default function EditProductPage() {
   const searchParams = useSearchParams();
   const id = Number(searchParams.get("id"));
   const { products, updateProduct } = useProductStore();
-  const [categories, setCategories] = useState<Category[]>([]);
 
   const form = useForm<ProductFormValues>({
     resolver: zodResolver(productFormSchema),
     defaultValues: {
       id: 0,
       name: "",
-      category_id: null,
       selling_price: 0
     }
   });
-
-  useEffect(() => {
-    const loadCategories = async () => {
-      try {
-        const service = InventoryService.getInstance();
-        const loadedCategories = await service.getAllCategories();
-        setCategories(loadedCategories);
-      } catch (error) {
-        console.error("Gagal memuat kategori:", error);
-        toast.error("Gagal memuat kategori");
-      }
-    };
-
-    loadCategories();
-  }, []);
 
   useEffect(() => {
     if (id) {
       const product = products.find((p: Product) => p.id === id);
       if (product) {
         form.reset({
-          id: product.id!,
+          id: product.id,
           name: product.name,
-          category_id: product.category_id,
           selling_price: product.selling_price
         });
       } else {
@@ -92,7 +73,6 @@ export default function EditProductPage() {
     try {
       const productData = {
         ...values,
-        category_id: values.category_id || null,
         image_path: "" // Default empty image path
       };
       await updateProduct(productData);
@@ -114,6 +94,7 @@ export default function EditProductPage() {
             onClick={() => router.push("/p")}
             className="flex items-center gap-2"
           >
+            {/* biome-ignore lint/a11y/noSvgWithoutTitle: <explanation> */}
             <svg
               xmlns="http://www.w3.org/2000/svg"
               width="16"
@@ -150,48 +131,6 @@ export default function EditProductPage() {
                           className="h-11"
                         />
                       </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-
-                <FormField
-                  control={form.control}
-                  name="category_id"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel className="text-base">Kategori</FormLabel>
-                      <Select
-                        onValueChange={(value) =>
-                          field.onChange(
-                            value === "uncategorized" ? null : Number(value)
-                          )
-                        }
-                        value={
-                          field.value === null
-                            ? "uncategorized"
-                            : field.value?.toString()
-                        }
-                      >
-                        <FormControl>
-                          <SelectTrigger className="h-11">
-                            <SelectValue placeholder="Pilih kategori" />
-                          </SelectTrigger>
-                        </FormControl>
-                        <SelectContent>
-                          <SelectItem value="uncategorized">
-                            Tidak Berkategori
-                          </SelectItem>
-                          {categories.map((category) => (
-                            <SelectItem
-                              key={category.id}
-                              value={category.id?.toString() || ""}
-                            >
-                              {category.name}
-                            </SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
                       <FormMessage />
                     </FormItem>
                   )}

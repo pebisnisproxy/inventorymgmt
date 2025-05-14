@@ -1,14 +1,6 @@
-export interface Category {
-  id: number;
-  name: string;
-  created_at: string;
-  updated_at: string;
-}
-
 export interface Product {
   id: number;
   name: string;
-  category_id: number | null;
   image_path: string | null;
   selling_price: number;
   created_at: string;
@@ -58,10 +50,6 @@ export interface InventoryStock {
 }
 
 // Extended types for joins and views
-export interface ProductWithCategory extends Product {
-  category_name: string | null;
-}
-
 export interface ProductVariantWithProduct extends ProductVariant {
   product_name: string;
   selling_price: number;

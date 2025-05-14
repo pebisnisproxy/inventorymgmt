@@ -19,7 +19,7 @@ export class InventoryManager {
    * Initialize the inventory manager
    */
   public static async initialize(
-    dbPath = "sqlite:inventory-dev2.db"
+    dbPath = "sqlite:inventorymgmt.db"
   ): Promise<void> {
     await inventoryService.initialize(dbPath);
   }

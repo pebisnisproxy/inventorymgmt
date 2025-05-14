@@ -6,24 +6,14 @@
 -- Enable foreign key support
 PRAGMA foreign_keys = ON;
 
--- Categories table
-CREATE TABLE IF NOT EXISTS categories (
-    id INTEGER PRIMARY KEY AUTOINCREMENT,
-    name TEXT NOT NULL,
-    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-);
-
 -- Products table
 CREATE TABLE IF NOT EXISTS products (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
     name TEXT NOT NULL,
-    category_id INTEGER,
     image_path TEXT,
     selling_price DECIMAL(15,2) NOT NULL DEFAULT 0,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    FOREIGN KEY (category_id) REFERENCES categories(id) ON DELETE SET NULL
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 
 -- Product variants table
@@ -90,7 +80,6 @@ END;
 
 -- Safely create indexes (create if not exists not supported for indexes in SQLite)
 -- So we need to check if they exist first
-CREATE INDEX IF NOT EXISTS idx_products_category ON products(category_id);
 CREATE INDEX IF NOT EXISTS idx_variants_product ON product_variants(product_id);
 CREATE INDEX IF NOT EXISTS idx_variants_barcode_code ON product_variants(barcode_code);
 CREATE INDEX IF NOT EXISTS idx_movement_items_movement ON inventory_movement_items(movement_id);

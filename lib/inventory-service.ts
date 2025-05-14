@@ -2,7 +2,6 @@
 import Database from "@tauri-apps/plugin-sql";
 
 import type {
-  Category,
   InventoryMovement,
   InventoryMovementItem,
   InventoryValuation,
@@ -11,7 +10,6 @@ import type {
   Product,
   ProductVariant,
   ProductVariantWithProduct,
-  ProductWithCategory,
   StockLevel
 } from "./types/database";
 
@@ -37,7 +35,7 @@ export class InventoryService {
   /**
    * Initialize the database connection
    */
-  public async initialize(dbPath = "sqlite:inventory-dev2.db"): Promise<void> {
+  public async initialize(dbPath = "sqlite:inventorymgmt.db"): Promise<void> {
     try {
       this.db = await Database.load(dbPath);
       console.log("Database initialized successfully");
@@ -63,109 +61,15 @@ export class InventoryService {
     }
   }
 
-  // Category CRUD operations
-  /**
-   * Get all categories
-   */
-  public async getAllCategories(): Promise<Category[]> {
-    if (!this.db) throw new Error("Database not initialized");
-    return await this.db.select<Category[]>(
-      "SELECT * FROM categories ORDER BY name"
-    );
-  }
-
-  /**
-   * Get a category by ID
-   */
-  public async getCategoryById(id: number): Promise<Category | null> {
-    if (!this.db) throw new Error("Database not initialized");
-    try {
-      const categories = await this.db.select<Category[]>(
-        "SELECT * FROM categories WHERE id = ?",
-        [id]
-      );
-      return categories.length > 0 ? categories[0] : null;
-    } catch (error) {
-      console.error(`Failed to get category with ID ${id}:`, error);
-      throw error;
-    }
-  }
-
-  /**
-   * Create a new category
-   */
-  public async createCategory(name: string): Promise<number> {
-    if (!this.db) throw new Error("Database not initialized");
-    const result = await this.db.execute(
-      "INSERT INTO categories (name) VALUES (?) RETURNING id",
-      [name]
-    );
-    if (!result.lastInsertId) throw new Error("Failed to create category");
-    return result.lastInsertId;
-  }
-
-  /**
-   * Update an existing category
-   */
-  public async updateCategory(category: Category): Promise<void> {
-    if (!this.db) throw new Error("Database not initialized");
-    if (!category.id) throw new Error("Category ID is required");
-
-    try {
-      await this.db.execute(
-        "UPDATE categories SET name = ?, updated_at = CURRENT_TIMESTAMP WHERE id = ?",
-        [category.name, category.id]
-      );
-    } catch (error) {
-      console.error(`Failed to update category with ID ${category.id}:`, error);
-      throw error;
-    }
-  }
-
-  /**
-   * Delete a category
-   */
-  public async deleteCategory(id: number): Promise<void> {
-    if (!this.db) throw new Error("Database not initialized");
-    try {
-      await this.db.execute("DELETE FROM categories WHERE id = ?", [id]);
-    } catch (error) {
-      console.error(`Failed to delete category with ID ${id}:`, error);
-      throw error;
-    }
-  }
-
   // Product CRUD operations
   /**
    * Get all products
    */
-  public async getAllProducts(): Promise<ProductWithCategory[]> {
+  public async getAllProducts(): Promise<Product[]> {
     if (!this.db) throw new Error("Database not initialized");
-    return await this.db.select<ProductWithCategory[]>(`
-      SELECT p.*, c.name as category_name
-      FROM products p
-      LEFT JOIN categories c ON p.category_id = c.id
-      ORDER BY p.name
-    `);
-  }
-
-  /**
-   * Get products by category
-   */
-  public async getProductsByCategory(categoryId: number): Promise<Product[]> {
-    if (!this.db) throw new Error("Database not initialized");
-    try {
-      return await this.db.select<Product[]>(
-        "SELECT * FROM products WHERE category_id = ? ORDER BY name",
-        [categoryId]
-      );
-    } catch (error) {
-      console.error(
-        `Failed to get products for category ID ${categoryId}:`,
-        error
-      );
-      throw error;
-    }
+    return await this.db.select<Product[]>(
+      "SELECT * FROM products ORDER BY name"
+    );
   }
 
   /**
@@ -193,13 +97,8 @@ export class InventoryService {
   ): Promise<number> {
     if (!this.db) throw new Error("Database not initialized");
     const result = await this.db.execute(
-      "INSERT INTO products (name, category_id, image_path, selling_price) VALUES (?, ?, ?, ?) RETURNING id",
-      [
-        product.name,
-        product.category_id,
-        product.image_path,
-        product.selling_price
-      ]
+      "INSERT INTO products (name, image_path, selling_price) VALUES (?, ?, ?) RETURNING id",
+      [product.name, product.image_path, product.selling_price]
     );
     if (!result.lastInsertId) throw new Error("Failed to create product");
     return result.lastInsertId;
@@ -216,14 +115,8 @@ export class InventoryService {
 
     try {
       await this.db.execute(
-        "UPDATE products SET name = ?, category_id = ?, image_path = ?, selling_price = ?, updated_at = CURRENT_TIMESTAMP WHERE id = ?",
-        [
-          product.name,
-          product.category_id,
-          product.image_path,
-          product.selling_price,
-          product.id
-        ]
+        "UPDATE products SET name = ?, image_path = ?, selling_price = ?, updated_at = CURRENT_TIMESTAMP WHERE id = ?",
+        [product.name, product.image_path, product.selling_price, product.id]
       );
     } catch (error) {
       console.error(`Failed to update product with ID ${product.id}:`, error);

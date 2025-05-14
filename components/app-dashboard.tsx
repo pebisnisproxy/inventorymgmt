@@ -17,7 +17,6 @@ import { toast } from "sonner";
 
 import { InventoryService } from "@/lib/inventory-service";
 import { useProductStore } from "@/lib/store/product-store";
-import type { Category } from "@/lib/types/database";
 import { cn } from "@/lib/utils";
 
 import { CommandSearch } from "@/components/command-search";
@@ -72,7 +71,6 @@ export default function AppDashboard({
 }) {
   const router = useRouter();
   const pathname = usePathname();
-  const [categories, setCategories] = useState<Category[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [isRefreshing, setIsRefreshing] = useState(false);
   const [isMobile, setIsMobile] = useState(false);
@@ -106,9 +104,7 @@ export default function AppDashboard({
 
       // Tunggu sebentar untuk memastikan database siap
       await new Promise((resolve) => setTimeout(resolve, 100));
-      const categoriesData = await service.getAllCategories();
       fetchProducts();
-      setCategories(categoriesData);
       setError(null);
     } catch (error) {
       console.error("Gagal memuat data:", error);
@@ -225,16 +221,6 @@ export default function AppDashboard({
                             value={`product:${product.id}`}
                           >
                             {product.name}
-                          </SelectItem>
-                        ))}
-
-                        <SelectLabel>Kategori</SelectLabel>
-                        {categories.map((category) => (
-                          <SelectItem
-                            key={category.id}
-                            value={`category:${category.id}`}
-                          >
-                            {category.name}
                           </SelectItem>
                         ))}
                       </SelectGroup>
