@@ -144,9 +144,6 @@ export default function AppDashboard({
     } else if (value.startsWith("product:")) {
       const id = value.replace("product:", "");
       router.push(`/p/detail?id=${id}`);
-    } else if (value.startsWith("category:")) {
-      const id = value.replace("category:", "");
-      router.push(`/c?id=${id}`);
     }
   };
 

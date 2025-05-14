@@ -11,11 +11,7 @@ import * as z from "zod";
 
 import { InventoryService } from "@/lib/inventory-service";
 import type { GenerateBarcodeData } from "@/lib/types/common";
-import type {
-  Category,
-  Product,
-  ProductVariantWithProduct
-} from "@/lib/types/database";
+import type { Product, ProductVariantWithProduct } from "@/lib/types/database";
 import { formatCurrency } from "@/lib/utils";
 
 import BarcodeDisplay from "@/components/barcode-display";
@@ -59,7 +55,6 @@ export default function ProductDetailPage() {
   const searchParams = useSearchParams();
   const productId = Number(searchParams.get("id"));
   const [product, setProduct] = useState<Product | null>(null);
-  const [category, setCategory] = useState<Category | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [variants, setVariants] = useState<ProductVariantWithProduct[]>([]);
   const [stockLevels, setStockLevels] = useState<Map<number, number>>(
@@ -92,13 +87,6 @@ export default function ProductDetailPage() {
         }
 
         setProduct(productData);
-
-        if (productData.category_id) {
-          const categoryData = await service.getCategoryById(
-            productData.category_id
-          );
-          setCategory(categoryData);
-        }
       } catch (error) {
         console.error("Gagal memuat data:", error);
         toast.error("Gagal memuat data produk");
@@ -349,10 +337,6 @@ export default function ProductDetailPage() {
                     {product.name}
                   </div>
                   <div>
-                    <span className="font-medium">Kategori:</span>{" "}
-                    {category ? category.name : "Tidak ada kategori"}
-                  </div>
-                  <div>
                     <span className="font-medium">Harga Jual:</span>{" "}
                     {formatCurrency(product.selling_price)}
                   </div>
@@ -363,10 +347,6 @@ export default function ProductDetailPage() {
                   <div>
                     <span className="font-medium">Terakhir Diperbarui:</span>{" "}
                     {new Date(product.updated_at).toLocaleDateString()}
-                  </div>
-                  <div>
-                    <span className="font-medium">ID Kategori:</span>{" "}
-                    {product.category_id || "Tidak ada kategori"}
                   </div>
 
                   <div className="mt-4 p-3 bg-blue-50 border border-blue-200 rounded-md flex items-start gap-2">

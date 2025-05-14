@@ -9,8 +9,8 @@ import inventoryService from "@/lib/inventory-service";
 import type {
   InventoryMovement,
   InventoryMovementItem,
-  ProductVariantWithProduct,
-  ProductWithCategory
+  Product,
+  ProductVariantWithProduct
 } from "@/lib/types/database";
 import { formatDateTime } from "@/lib/utils";
 
@@ -46,7 +46,7 @@ export default function ProductReturnPage() {
 
   const [movements, setMovements] = useState<MovementWithItems[]>([]);
   const [isLoading, setIsLoading] = useState(true);
-  const [products, setProducts] = useState<ProductWithCategory[]>([]);
+  const [products, setProducts] = useState<Product[]>([]);
   const [variants, setVariants] = useState<ProductVariantWithProduct[]>([]);
   const [selectedProductId, setSelectedProductId] = useState<number | null>(
     null
