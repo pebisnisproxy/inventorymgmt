@@ -1,3 +1,8 @@
+/**
+ * Copyright (c) HashiCorp, Inc.
+ * SPDX-License-Identifier: Apache-2.0
+ */
+
 "use client";
 
 import { ErrorBoundary } from "@/components/error-boundary";

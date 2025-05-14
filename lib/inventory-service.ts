@@ -1,3 +1,8 @@
+/**
+ * Copyright (c) HashiCorp, Inc.
+ * SPDX-License-Identifier: Apache-2.0
+ */
+
 // Import the Tauri SQL plugin
 import Database from "@tauri-apps/plugin-sql";
 

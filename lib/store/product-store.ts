@@ -1,3 +1,8 @@
+/**
+ * Copyright (c) HashiCorp, Inc.
+ * SPDX-License-Identifier: Apache-2.0
+ */
+
 import { create } from "zustand";
 
 import { InventoryManager } from "../inventory-manager";

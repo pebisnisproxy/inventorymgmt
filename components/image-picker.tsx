@@ -1,3 +1,8 @@
+/**
+ * Copyright (c) HashiCorp, Inc.
+ * SPDX-License-Identifier: Apache-2.0
+ */
+
 import { revealItemInDir } from "@tauri-apps/plugin-opener";
 import { FolderOpen, Image as ImageIcon, Loader2 } from "lucide-react";
 import Image from "next/image";
