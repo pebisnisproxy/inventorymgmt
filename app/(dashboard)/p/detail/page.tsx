@@ -2,10 +2,10 @@
 
 import { zodResolver } from "@hookform/resolvers/zod";
 import { invoke } from "@tauri-apps/api/core";
-import { InfoIcon } from "lucide-react";
+import { InfoIcon, PlusIcon, Trash2Icon } from "lucide-react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useEffect, useState } from "react";
-import { useForm } from "react-hook-form";
+import { useFieldArray, useForm } from "react-hook-form";
 import { toast } from "sonner";
 import * as z from "zod";
 
@@ -176,33 +176,41 @@ export default function ProductDetailPage() {
 
   // Variant form schema
   const variantFormSchema = z.object({
-    handle: z
-      .string()
-      .min(1, "Nama varian harus diisi")
-      .refine((value) => !value.includes(" "), {
-        message: "Nama varian harus satu kata tanpa spasi"
-      }),
-    barcode_path: z.string().optional().nullable()
+    variants: z.array(
+      z.object({
+        handle: z
+          .string()
+          .min(1, "Nama varian harus diisi")
+          .refine((value) => !value.includes(" "), {
+            message: "Nama varian harus satu kata tanpa spasi"
+          })
+      })
+    )
   });
   type VariantFormValues = z.infer<typeof variantFormSchema>;
 
   const variantForm = useForm<VariantFormValues>({
     resolver: zodResolver(variantFormSchema),
     defaultValues: {
-      handle: editingVariant ? editingVariant.handle : "",
-      barcode_path: editingVariant ? editingVariant.barcode_path : ""
+      variants: editingVariant
+        ? [{ handle: editingVariant.handle }]
+        : [{ handle: "" }]
     }
+  });
+
+  const { fields, append, remove } = useFieldArray({
+    control: variantForm.control,
+    name: "variants"
   });
 
   // biome-ignore lint/correctness/useExhaustiveDependencies: <explanation>
   useEffect(() => {
     if (editingVariant) {
       variantForm.reset({
-        handle: editingVariant.handle,
-        barcode_path: editingVariant.barcode_path || ""
+        variants: [{ handle: editingVariant.handle }]
       });
     } else {
-      variantForm.reset({ handle: "", barcode_path: "" });
+      variantForm.reset({ variants: [{ handle: "" }] });
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [editingVariant, showVariantDialog]);
@@ -216,38 +224,43 @@ export default function ProductDetailPage() {
         await service.updateProductVariant({
           id: editingVariant.id,
           product_id: productId,
-          handle: values.handle,
+          handle: values.variants[0].handle,
           barcode_code: editingVariant.barcode_code,
           barcode: editingVariant.barcode,
-          barcode_path: values.barcode_path || null,
+          barcode_path: editingVariant.barcode_path || null,
           created_at: editingVariant.created_at,
           updated_at: editingVariant.updated_at
         });
         toast.success("Varian berhasil diperbarui");
       } else {
-        const generateBarcodeData = (await invoke("generate_barcode", {
-          productName: product?.name || "",
-          variantName: values.handle
-        })) as GenerateBarcodeData;
+        // Add multiple variants at once
+        for (const variant of values.variants) {
+          if (!variant.handle.trim()) continue; // Skip empty variants
 
-        let barcodeData = null;
-        try {
-          if (typeof generateBarcodeData.barcode === "string") {
-            barcodeData = JSON.parse(generateBarcodeData.barcode);
-          } else {
-            barcodeData = generateBarcodeData.barcode;
+          const generateBarcodeData = (await invoke("generate_barcode", {
+            productName: product?.name || "",
+            variantName: variant.handle
+          })) as GenerateBarcodeData;
+
+          let barcodeData = null;
+          try {
+            if (typeof generateBarcodeData.barcode === "string") {
+              barcodeData = JSON.parse(generateBarcodeData.barcode);
+            } else {
+              barcodeData = generateBarcodeData.barcode;
+            }
+          } catch (e) {
+            console.error("Failed to parse barcode data:", e);
           }
-        } catch (e) {
-          console.error("Failed to parse barcode data:", e);
-        }
 
-        await service.createProductVariant({
-          product_id: productId,
-          handle: values.handle,
-          barcode_code: generateBarcodeData.barcode_code,
-          barcode: barcodeData,
-          barcode_path: generateBarcodeData.file_path || null
-        });
+          await service.createProductVariant({
+            product_id: productId,
+            handle: variant.handle,
+            barcode_code: generateBarcodeData.barcode_code,
+            barcode: barcodeData,
+            barcode_path: generateBarcodeData.file_path || null
+          });
+        }
         toast.success("Varian berhasil ditambahkan");
       }
       setShowVariantDialog(false);
@@ -537,7 +550,7 @@ export default function ProductDetailPage() {
 
       {/* Add/Edit Variant Dialog */}
       <Dialog open={showVariantDialog} onOpenChange={setShowVariantDialog}>
-        <DialogContent>
+        <DialogContent className="max-w-md">
           <DialogHeader>
             <DialogTitle>
               {editingVariant ? "Ubah Varian" : "Tambah Varian"}
@@ -545,7 +558,7 @@ export default function ProductDetailPage() {
             <DialogDescription>
               {editingVariant
                 ? "Edit detail varian produk."
-                : "Tambah varian baru untuk produk ini."}
+                : "Tambah satu atau beberapa varian baru untuk produk ini."}
             </DialogDescription>
           </DialogHeader>
           <Form {...variantForm}>
@@ -553,41 +566,57 @@ export default function ProductDetailPage() {
               onSubmit={variantForm.handleSubmit(onSubmitVariant)}
               className="space-y-4"
             >
-              <FormField
-                control={variantForm.control}
-                name="handle"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Nama Varian</FormLabel>
-                    <FormControl>
-                      <Input placeholder="Nama varian" {...field} />
-                    </FormControl>
-                    <p className="text-xs text-muted-foreground mt-1">
-                      Gunakan satu kata tanpa spasi (seperti: S, XL, Merah,
-                      Hitam). Ini digunakan untuk kode barcode dan identifikasi.
-                    </p>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-              <FormField
-                control={variantForm.control}
-                name="barcode_path"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Barcode (auto generated)</FormLabel>
-                    <FormControl>
-                      <Input
-                        disabled
-                        placeholder="Barcode"
-                        {...field}
-                        value={field.value || ""}
-                      />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
+              <div className="space-y-4">
+                {fields.map((field, index) => (
+                  <div key={field.id} className="flex items-end gap-2">
+                    <FormField
+                      control={variantForm.control}
+                      name={`variants.${index}.handle`}
+                      render={({ field }) => (
+                        <FormItem className="flex-1">
+                          <FormLabel>Nama Varian {index + 1}</FormLabel>
+                          <FormControl>
+                            <Input placeholder="Nama varian" {...field} />
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+                    {!editingVariant && fields.length > 1 && (
+                      <Button
+                        type="button"
+                        variant="outline"
+                        size="icon"
+                        className="mb-2"
+                        onClick={() => remove(index)}
+                      >
+                        <Trash2Icon className="h-4 w-4" />
+                      </Button>
+                    )}
+                  </div>
+                ))}
+              </div>
+
+              {!editingVariant && (
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  className="mt-2"
+                  onClick={() => append({ handle: "" })}
+                >
+                  <PlusIcon className="h-4 w-4 mr-2" />
+                  Tambah Varian Lainnya
+                </Button>
+              )}
+
+              {!editingVariant && (
+                <p className="text-xs text-muted-foreground mt-1">
+                  Gunakan satu kata tanpa spasi (seperti: S, XL, Merah, Hitam).
+                  Ini digunakan untuk kode barcode dan identifikasi.
+                </p>
+              )}
+
               <DialogFooter>
                 <Button type="submit">
                   {editingVariant ? "Simpan Perubahan" : "Tambah Varian"}
