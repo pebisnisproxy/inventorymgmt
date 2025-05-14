@@ -14,8 +14,7 @@ import type { GenerateBarcodeData } from "@/lib/types/common";
 import type {
   Category,
   Product,
-  ProductVariantWithProduct,
-  StockLevel
+  ProductVariantWithProduct
 } from "@/lib/types/database";
 import { formatCurrency } from "@/lib/utils";
 
@@ -137,7 +136,7 @@ export default function ProductDetailPage() {
       }
 
       setStockLevels(stockMap);
-    } catch (error) {
+    } catch {
       toast.error("Gagal memuat varian produk");
     } finally {
       setVariantLoading(false);
@@ -168,7 +167,7 @@ export default function ProductDetailPage() {
       toast.success("Varian berhasil dihapus");
       setDeletingVariant(null);
       loadVariants();
-    } catch (error) {
+    } catch {
       toast.error("Gagal menghapus varian");
     } finally {
       setDeleteLoading(false);

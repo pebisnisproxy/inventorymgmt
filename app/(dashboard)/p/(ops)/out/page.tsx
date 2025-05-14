@@ -90,7 +90,7 @@ export default function ProductOutPage() {
       await InventoryManager.initialize();
       const productList = await inventoryService.getAllProducts();
       setProducts(productList);
-    } catch (error) {
+    } catch {
       toast.error("Gagal memuat produk");
     }
   }
@@ -100,7 +100,7 @@ export default function ProductOutPage() {
       await InventoryManager.initialize();
       const variantList = await inventoryService.getProductVariants(productId);
       setVariants(variantList);
-    } catch (error) {
+    } catch {
       toast.error("Gagal memuat varian produk");
     }
   }
@@ -363,7 +363,7 @@ export default function ProductOutPage() {
                         if (variant) {
                           router.push(`/p/detail?id=${variant.product_id}`);
                         }
-                      } catch (error) {
+                      } catch {
                         toast.error("Failed to navigate to product details");
                       }
                     }}

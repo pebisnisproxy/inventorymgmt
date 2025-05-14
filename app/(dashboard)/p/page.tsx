@@ -210,7 +210,7 @@ export default function ProductsPage() {
                     <TableCell className="font-medium">
                       {product.name}
                     </TableCell>
-                    <TableCell>{product.category_id}</TableCell>
+                    <TableCell>{product.name}</TableCell>
                     <TableCell>
                       {formatCurrency(product.selling_price)}
                     </TableCell>

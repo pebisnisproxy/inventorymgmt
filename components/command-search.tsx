@@ -35,7 +35,7 @@ export function CommandSearch({ children }: CommandSearchProps) {
   const [variants, setVariants] = React.useState<ProductVariantWithProduct[]>(
     []
   );
-  const [movements, setMovements] = React.useState<InventoryMovement[]>([]);
+  const [_, setMovements] = React.useState<InventoryMovement[]>([]);
 
   // Fetch data when dialog opens
   React.useEffect(() => {
@@ -49,7 +49,7 @@ export function CommandSearch({ children }: CommandSearchProps) {
     const down = (e: KeyboardEvent) => {
       if ((e.key === "k" && (e.metaKey || e.ctrlKey)) || e.key === "/") {
         e.preventDefault();
-        setOpen((open) => !open);
+        setOpen((open: boolean) => !open);
       }
     };
 
