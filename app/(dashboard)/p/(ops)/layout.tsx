@@ -7,7 +7,6 @@ import { createContext, useContext, useState } from "react";
 import type { ProductVariantWithProduct } from "@/lib/types/database";
 
 import { BarcodeScannerDialog } from "@/components/barcode-scanner-dialog";
-import { CommandSearch } from "@/components/command-search";
 import { DatePicker } from "@/components/date-picker";
 import { Button } from "@/components/ui/button";
 

@@ -41,8 +41,6 @@ export function BarcodeScannerDialog({
   const [barcode, setBarcode] = useState("");
   const [isLoading, setIsLoading] = useState(false);
   const [isProcessing, setIsProcessing] = useState(false);
-  const [foundProduct, setFoundProduct] =
-    useState<ProductVariantWithProduct | null>(null);
   const [open, setOpen] = useState(false);
   const [lastProcessedProducts, setLastProcessedProducts] = useState<
     ProcessedProduct[]
@@ -127,8 +125,6 @@ export function BarcodeScannerDialog({
         toast.error(`Produk dengan barcode ${code} tidak ditemukan`);
         return;
       }
-
-      setFoundProduct(variant);
 
       // Automatically process the stock change
       await processStockChange(variant);
@@ -250,7 +246,6 @@ export function BarcodeScannerDialog({
 
   const resetForm = () => {
     setBarcode("");
-    setFoundProduct(null);
     setLastProcessedProducts([]);
   };
 

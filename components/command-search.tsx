@@ -35,6 +35,7 @@ export function CommandSearch({ children }: CommandSearchProps) {
   const [variants, setVariants] = React.useState<ProductVariantWithProduct[]>(
     []
   );
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   const [_, setMovements] = React.useState<InventoryMovement[]>([]);
 
   // Fetch data when dialog opens

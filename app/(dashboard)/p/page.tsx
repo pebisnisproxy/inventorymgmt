@@ -29,14 +29,6 @@ import {
   CardHeader,
   CardTitle
 } from "@/components/ui/card";
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow
-} from "@/components/ui/table";
 
 export default function ProductsPage() {
   const [products, setProducts] = useState<Product[]>([]);
