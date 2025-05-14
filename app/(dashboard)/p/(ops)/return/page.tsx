@@ -1,7 +1,7 @@
 "use client";
 
 import { useRouter, useSearchParams } from "next/navigation";
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { toast } from "sonner";
 
 import { InventoryManager } from "@/lib/inventory-manager";
@@ -12,6 +12,7 @@ import type {
   ProductVariantWithProduct,
   ProductWithCategory
 } from "@/lib/types/database";
+import { formatDateTime } from "@/lib/utils";
 
 import { Button } from "@/components/ui/button";
 import {
@@ -41,7 +42,7 @@ export default function ProductReturnPage() {
   const searchParams = useSearchParams();
   const variantIdFromUrl = searchParams.get("variantId");
   const router = useRouter();
-  const { startDate, endDate } = useDateFilter();
+  const { startDate, endDate, setRefreshData } = useDateFilter();
 
   const [movements, setMovements] = useState<MovementWithItems[]>([]);
   const [isLoading, setIsLoading] = useState(true);
@@ -58,7 +59,7 @@ export default function ProductReturnPage() {
   const [notes, setNotes] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
 
-  async function loadData() {
+  const loadData = useCallback(async () => {
     try {
       await InventoryManager.initialize();
       const movementList = await inventoryService.getInventoryMovements(
@@ -83,9 +84,9 @@ export default function ProductReturnPage() {
     } finally {
       setIsLoading(false);
     }
-  }
+  }, [startDate, endDate]);
 
-  async function loadProducts() {
+  const loadProducts = useCallback(async () => {
     try {
       await InventoryManager.initialize();
       const productList = await inventoryService.getAllProducts();
@@ -93,9 +94,9 @@ export default function ProductReturnPage() {
     } catch {
       toast.error("Gagal memuat produk");
     }
-  }
+  }, []);
 
-  async function loadVariants(productId: number) {
+  const loadVariants = useCallback(async (productId: number) => {
     try {
       await InventoryManager.initialize();
       const variantList = await inventoryService.getProductVariants(productId);
@@ -103,56 +104,57 @@ export default function ProductReturnPage() {
     } catch {
       toast.error("Gagal memuat varian produk");
     }
-  }
+  }, []);
 
-  const loadVariantFromUrl = async (variantId: number) => {
-    try {
-      await InventoryManager.initialize();
+  const loadVariantFromUrl = useCallback(
+    async (variantId: number) => {
+      try {
+        await InventoryManager.initialize();
 
-      // Get the variant details
-      const variant = await inventoryService.getVariantById(variantId);
-      if (!variant) {
-        toast.error("Variant tidak ditemukan");
-        return;
+        // Get the variant details
+        const variant = await inventoryService.getVariantById(variantId);
+        if (!variant) {
+          toast.error("Variant tidak ditemukan");
+          return;
+        }
+
+        // Set the product ID
+        setSelectedProductId(variant.product_id);
+
+        // Load all variants for this product
+        await loadVariants(variant.product_id);
+
+        // Set the selected variant
+        setSelectedVariantId(variantId);
+
+        // Get the product to set the default price
+        const productVariants = await inventoryService.getProductVariants(
+          variant.product_id
+        );
+        const variantWithProduct = productVariants.find(
+          (v) => v.id === variantId
+        );
+        if (variantWithProduct) {
+          setPricePerUnit(variantWithProduct.selling_price);
+        }
+
+        // Ensure quantity is set to 1
+        setQuantity(1);
+
+        // Set focus to quantity field
+        const quantityInput = document.getElementById(
+          "quantity"
+        ) as HTMLInputElement;
+        if (quantityInput) {
+          quantityInput.focus();
+        }
+      } catch (error) {
+        console.error("Error loading variant from URL:", error);
+        toast.error("Gagal memuat data produk");
       }
-
-      // Set the product ID
-      setSelectedProductId(variant.product_id);
-
-      // Load all variants for this product
-      await loadVariants(variant.product_id);
-
-      // Set the selected variant
-      setSelectedVariantId(variantId);
-
-      // Get the product to set the default price
-      const productVariants = await inventoryService.getProductVariants(
-        variant.product_id
-      );
-      const variantWithProduct = productVariants.find(
-        (v) => v.id === variantId
-      );
-      if (variantWithProduct) {
-        setPricePerUnit(variantWithProduct.selling_price);
-      }
-
-      // Ensure quantity is set to 1
-      setQuantity(1);
-
-      // Set focus to quantity field
-      const quantityInput = document.getElementById(
-        "quantity"
-      ) as HTMLInputElement;
-      if (quantityInput) {
-        quantityInput.focus();
-      }
-
-      toast.success("Produk ditemukan, silakan isi jumlah");
-    } catch (error) {
-      console.error("Error loading variant from URL:", error);
-      toast.error("Gagal memuat data produk");
-    }
-  };
+    },
+    [loadVariants]
+  );
 
   function handleProductChange(event: React.ChangeEvent<HTMLSelectElement>) {
     const productId = Number(event.target.value);
@@ -218,19 +220,25 @@ export default function ProductReturnPage() {
     }
   }
 
-  // biome-ignore lint/correctness/useExhaustiveDependencies: <explanation>
+  useEffect(() => {
+    setRefreshData(loadData);
+
+    return () => {
+      setRefreshData(() => {});
+    };
+  }, [loadData, setRefreshData]);
+
   useEffect(() => {
     loadData();
     loadProducts();
 
-    // Check if we have a variantId in the URL
     if (variantIdFromUrl) {
       const variantId = Number.parseInt(variantIdFromUrl, 10);
       if (!Number.isNaN(variantId)) {
         loadVariantFromUrl(variantId);
       }
     }
-  }, [variantIdFromUrl, startDate, endDate]);
+  }, [variantIdFromUrl, loadData, loadProducts, loadVariantFromUrl]);
 
   if (isLoading) {
     return (
@@ -322,7 +330,9 @@ export default function ProductReturnPage() {
           {movements?.map((movement) =>
             movement?.items?.map((item, idx) => (
               <TableRow key={`${movement.id}-${idx}`}>
-                <TableCell>{movement.movement_date}</TableCell>
+                <TableCell>
+                  {formatDateTime(new Date(movement.movement_date))}
+                </TableCell>
                 <TableCell>{movement.id}</TableCell>
                 <TableCell>{movement.notes}</TableCell>
                 <TableCell>

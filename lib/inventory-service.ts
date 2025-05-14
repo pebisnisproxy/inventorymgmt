@@ -391,9 +391,12 @@ export class InventoryService {
 
     await this.db.execute("BEGIN TRANSACTION");
     try {
+      // Use current date-time string in ISO format
+      const now = new Date().toISOString();
+
       const movementResult = await this.db.execute(
-        "INSERT INTO inventory_movements (movement_type, notes) VALUES (?, ?) RETURNING id",
-        [movement.movement_type, movement.notes]
+        "INSERT INTO inventory_movements (movement_type, notes, movement_date) VALUES (?, ?, ?) RETURNING id",
+        [movement.movement_type, movement.notes, now]
       );
       if (!movementResult.lastInsertId)
         throw new Error("Failed to create inventory movement");
@@ -442,13 +445,16 @@ export class InventoryService {
       }
 
       if (startDate) {
-        conditions.push(" movement_date >= ?");
+        conditions.push(" date(movement_date) >= date(?)");
         params.push(startDate);
       }
 
       if (endDate) {
-        conditions.push(" movement_date <= ?");
-        params.push(endDate);
+        // Add one day to include the entire end date (up to 23:59:59)
+        const nextDay = new Date(endDate);
+        nextDay.setDate(nextDay.getDate() + 1);
+        conditions.push(" date(movement_date) < date(?)");
+        params.push(nextDay.toISOString().split("T")[0]);
       }
 
       query += conditions.join(" AND");

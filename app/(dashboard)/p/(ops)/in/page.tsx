@@ -2,7 +2,7 @@
 
 import { useSearchParams } from "next/navigation";
 import { useRouter } from "next/navigation";
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { toast } from "sonner";
 
 import { InventoryManager } from "@/lib/inventory-manager";
@@ -13,6 +13,7 @@ import type {
   ProductVariantWithProduct,
   ProductWithCategory
 } from "@/lib/types/database";
+import { formatDateTime } from "@/lib/utils";
 
 import { Button } from "@/components/ui/button";
 import {
@@ -42,7 +43,7 @@ export default function ProductInPage() {
   const searchParams = useSearchParams();
   const variantIdFromUrl = searchParams.get("variantId");
   const router = useRouter();
-  const { startDate, endDate } = useDateFilter();
+  const { startDate, endDate, setRefreshData } = useDateFilter();
 
   const [movements, setMovements] = useState<MovementWithItems[]>([]);
   const [isLoading, setIsLoading] = useState(true);
@@ -59,7 +60,7 @@ export default function ProductInPage() {
   const [notes, setNotes] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
 
-  async function loadData() {
+  const loadData = useCallback(async () => {
     try {
       await InventoryManager.initialize();
       const movementList = await inventoryService.getInventoryMovements(
@@ -84,9 +85,9 @@ export default function ProductInPage() {
     } finally {
       setIsLoading(false);
     }
-  }
+  }, [startDate, endDate]);
 
-  async function loadProducts() {
+  const loadProducts = useCallback(async () => {
     try {
       await InventoryManager.initialize();
       const productList = await inventoryService.getAllProducts();
@@ -94,9 +95,9 @@ export default function ProductInPage() {
     } catch {
       toast.error("Gagal memuat produk");
     }
-  }
+  }, []);
 
-  async function loadVariants(productId: number) {
+  const loadVariants = useCallback(async (productId: number) => {
     try {
       await InventoryManager.initialize();
       const variantList = await inventoryService.getProductVariants(productId);
@@ -104,56 +105,70 @@ export default function ProductInPage() {
     } catch {
       toast.error("Gagal memuat varian produk");
     }
-  }
+  }, []);
 
-  const loadVariantFromUrl = async (variantId: number) => {
-    try {
-      await InventoryManager.initialize();
+  const loadVariantFromUrl = useCallback(
+    async (variantId: number) => {
+      try {
+        await InventoryManager.initialize();
 
-      // Get the variant details
-      const variant = await inventoryService.getVariantById(variantId);
-      if (!variant) {
-        toast.error("Variant tidak ditemukan");
-        return;
+        const variant = await inventoryService.getVariantById(variantId);
+        if (!variant) {
+          toast.error("Variant tidak ditemukan");
+          return;
+        }
+
+        setSelectedProductId(variant.product_id);
+
+        await loadVariants(variant.product_id);
+
+        setSelectedVariantId(variantId);
+
+        const productVariants = await inventoryService.getProductVariants(
+          variant.product_id
+        );
+        const variantWithProduct = productVariants.find(
+          (v) => v.id === variantId
+        );
+        if (variantWithProduct) {
+          setCostPerUnit(variantWithProduct.selling_price);
+        }
+
+        setQuantity(1);
+
+        const quantityInput = document.getElementById(
+          "quantity"
+        ) as HTMLInputElement;
+        if (quantityInput) {
+          quantityInput.focus();
+        }
+      } catch (error) {
+        console.error("Error loading variant from URL:", error);
+        toast.error("Gagal memuat data produk");
       }
+    },
+    [loadVariants]
+  );
 
-      // Set the product ID
-      setSelectedProductId(variant.product_id);
+  useEffect(() => {
+    setRefreshData(loadData);
 
-      // Load all variants for this product
-      await loadVariants(variant.product_id);
+    return () => {
+      setRefreshData(() => {});
+    };
+  }, [loadData, setRefreshData]);
 
-      // Set the selected variant
-      setSelectedVariantId(variantId);
+  useEffect(() => {
+    loadData();
+    loadProducts();
 
-      // Get product data to set the cost per unit
-      const productVariants = await inventoryService.getProductVariants(
-        variant.product_id
-      );
-      const variantWithProduct = productVariants.find(
-        (v) => v.id === variantId
-      );
-      if (variantWithProduct) {
-        setCostPerUnit(variantWithProduct.selling_price);
+    if (variantIdFromUrl) {
+      const variantId = Number.parseInt(variantIdFromUrl, 10);
+      if (!Number.isNaN(variantId)) {
+        loadVariantFromUrl(variantId);
       }
-
-      // Ensure quantity is set to 1
-      setQuantity(1);
-
-      // Set focus to quantity field
-      const quantityInput = document.getElementById(
-        "quantity"
-      ) as HTMLInputElement;
-      if (quantityInput) {
-        quantityInput.focus();
-      }
-
-      toast.success("Produk ditemukan, silakan isi jumlah");
-    } catch (error) {
-      console.error("Error loading variant from URL:", error);
-      toast.error("Gagal memuat data produk");
     }
-  };
+  }, [variantIdFromUrl, loadData, loadProducts, loadVariantFromUrl]);
 
   function handleProductChange(event: React.ChangeEvent<HTMLSelectElement>) {
     const productId = Number(event.target.value);
@@ -169,7 +184,6 @@ export default function ProductInPage() {
     const variantId = Number(event.target.value);
     setSelectedVariantId(variantId);
 
-    // Automatically set the cost per unit from the selected variant
     if (variantId) {
       const selectedVariant = variants.find((v) => v.id === variantId);
       if (selectedVariant) {
@@ -218,20 +232,6 @@ export default function ProductInPage() {
       setIsSubmitting(false);
     }
   }
-
-  // biome-ignore lint/correctness/useExhaustiveDependencies: <explanation>
-  useEffect(() => {
-    loadData();
-    loadProducts();
-
-    // Check if we have a variantId in the URL
-    if (variantIdFromUrl) {
-      const variantId = Number.parseInt(variantIdFromUrl, 10);
-      if (!Number.isNaN(variantId)) {
-        loadVariantFromUrl(variantId);
-      }
-    }
-  }, [variantIdFromUrl, startDate, endDate]);
 
   if (isLoading) {
     return (
@@ -323,7 +323,9 @@ export default function ProductInPage() {
           {movements?.map((movement) =>
             movement?.items?.map((item, idx) => (
               <TableRow key={`${movement.id}-${idx}`}>
-                <TableCell>{movement.movement_date}</TableCell>
+                <TableCell>
+                  {formatDateTime(new Date(movement.movement_date))}
+                </TableCell>
                 <TableCell>{movement.id}</TableCell>
                 <TableCell>{movement.notes}</TableCell>
                 <TableCell>
@@ -338,7 +340,6 @@ export default function ProductInPage() {
                     size="sm"
                     onClick={async () => {
                       try {
-                        // Get the variant first
                         const variant = await inventoryService.getVariantById(
                           item.product_variant_id
                         );

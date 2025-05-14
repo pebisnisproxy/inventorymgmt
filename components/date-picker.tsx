@@ -47,9 +47,8 @@ export function DatePicker({ onDateChange }: DatePickerProps) {
     <Popover>
       <PopoverTrigger asChild>
         <Button
-          variant={"outline"}
           className={cn(
-            "min-w-[240px] justify-start text-left font-normal",
+            "min-w-[240px] justify-start text-left font-normal invert",
             !date && "text-muted-foreground"
           )}
         >

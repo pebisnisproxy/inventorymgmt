@@ -117,16 +117,11 @@ export function CommandSearch({ children }: CommandSearchProps) {
   return (
     <>
       {children ? (
-        <Button
-          variant="ghost"
-          className="p-0 hover:bg-transparent"
-          onClick={openSearchDialog}
-        >
+        <Button className="p-0 hover:bg-transparent" onClick={openSearchDialog}>
           {children}
         </Button>
       ) : (
         <Button
-          variant="outline"
           size="icon"
           className="w-9 px-0"
           onClick={openSearchDialog}

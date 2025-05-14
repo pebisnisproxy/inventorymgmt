@@ -130,6 +130,7 @@ export default function AppDashboard({
   const handleRefresh = () => {
     setIsRefreshing(true);
     loadData();
+    router.refresh();
   };
 
   // Reset select value when URL changes

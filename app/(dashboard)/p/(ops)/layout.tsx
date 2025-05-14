@@ -1,6 +1,6 @@
 "use client";
 
-import { Barcode, Plus } from "lucide-react";
+import { Barcode } from "lucide-react";
 import { usePathname, useRouter } from "next/navigation";
 import { createContext, useContext, useState } from "react";
 
@@ -9,7 +9,6 @@ import type { ProductVariantWithProduct } from "@/lib/types/database";
 import { BarcodeScannerDialog } from "@/components/barcode-scanner-dialog";
 import { CommandSearch } from "@/components/command-search";
 import { DatePicker } from "@/components/date-picker";
-import { ProductDialog } from "@/components/product-dialog";
 import { Button } from "@/components/ui/button";
 
 // Create a context to share date filter values between layout and pages
@@ -17,12 +16,16 @@ interface DateFilterContextType {
   startDate?: string;
   endDate?: string;
   setDateFilter: (dates: { startDate?: string; endDate?: string }) => void;
+  refreshData?: () => void; // Add function to refresh data
+  setRefreshData: (callback: () => void) => void; // Add function to set the refresh callback
 }
 
 export const DateFilterContext = createContext<DateFilterContextType>({
   startDate: undefined,
   endDate: undefined,
-  setDateFilter: () => {}
+  setDateFilter: () => {},
+  refreshData: undefined,
+  setRefreshData: () => {}
 });
 
 // Hook to use the date filter
@@ -46,6 +49,24 @@ export default function ProductOperationLayout({
     endDate: undefined
   });
 
+  // State for data refresh callback
+  const [refreshDataCallback, setRefreshDataCallback] = useState<
+    (() => void | Promise<void>) | undefined
+  >(undefined);
+
+  // Create a wrapper function to handle the async callback safely
+  const handleRefresh = refreshDataCallback
+    ? () => {
+        if (refreshDataCallback) {
+          try {
+            return refreshDataCallback();
+          } catch (error) {
+            console.error("Error refreshing data:", error);
+          }
+        }
+      }
+    : undefined;
+
   const handleProductFound = (variant: ProductVariantWithProduct) => {
     // Redirect to the form with the product variant information
     // We'll append the variant ID to the URL as a query parameter
@@ -53,24 +74,23 @@ export default function ProductOperationLayout({
   };
 
   return (
-    <DateFilterContext.Provider value={{ ...dateFilter, setDateFilter }}>
+    <DateFilterContext.Provider
+      value={{
+        ...dateFilter,
+        setDateFilter,
+        refreshData: refreshDataCallback,
+        setRefreshData: setRefreshDataCallback
+      }}
+    >
       <div className="lg:p-4">
-        <div className="w-max absolute right-4 lg:right-8 flex gap-2 items-center">
-          <CommandSearch />
+        <div className="w-max absolute right-4 lg:right-8 flex gap-2 items-center bg-primary p-1 rounded-md z-10">
           <BarcodeScannerDialog
             type={type}
             onProductFound={handleProductFound}
+            onScanComplete={handleRefresh}
             trigger={
-              <Button size="icon" variant="outline">
+              <Button size="icon" className="invert">
                 <Barcode />
-              </Button>
-            }
-          />
-          <ProductDialog
-            type={type}
-            trigger={
-              <Button size="icon" variant="outline">
-                <Plus />
               </Button>
             }
           />
