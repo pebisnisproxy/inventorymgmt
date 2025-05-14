@@ -109,10 +109,17 @@ Thank you for addressing this issue.
               Jika masalah terus berlanjut, silakan hubungi administrator sistem
               di{" "}
               <a
-                href="mailto:support@example.com"
+                href="mailto:sena@lichtlabs.org"
                 className="text-blue-600 hover:underline"
               >
-                support@example.com
+                sena@lichtlabs.org
+              </a>{" "}
+              atau{" "}
+              <a
+                href="https://instagram.com/lichtlabs"
+                className="text-blue-600 hover:underline"
+              >
+                instagram.com/lichtlabs
               </a>
             </p>
           </div>

@@ -186,6 +186,13 @@ export class ErrorBoundary extends Component<Props, State> {
                 className="text-blue-600 hover:underline"
               >
                 sena@lichtlabs.org
+              </a>{" "}
+              atau{" "}
+              <a
+                href="https://instagram.com/lichtlabs"
+                className="text-blue-600 hover:underline"
+              >
+                instagram.com/lichtlabs
               </a>
             </p>
           </div>
