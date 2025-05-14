@@ -3,18 +3,23 @@
 import {
   ArrowLeft,
   Boxes,
+  Eye,
+  ImageIcon,
   Package,
   PackageOpen,
+  Pencil,
   RefreshCw,
   Undo2
 } from "lucide-react";
+import Image from "next/image";
 import Link from "next/link";
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { toast } from "sonner";
 
 import { InventoryService } from "@/lib/inventory-service";
 import type { Product, StockLevel } from "@/lib/types/database";
 import { cn, formatCurrency } from "@/lib/utils";
+import { getAssetUrl } from "@/lib/utils/file-utils";
 
 import { Button } from "@/components/ui/button";
 import {
@@ -39,6 +44,18 @@ export default function ProductsPage() {
   const [isLoading, setIsLoading] = useState(true);
   const [isRefreshing, setIsRefreshing] = useState(false);
   const [isMobile, setIsMobile] = useState(false);
+
+  // Calculate all image URLs at once outside the render loop
+  const productImageUrls = useMemo(() => {
+    return products.reduce<Record<number, string | null>>((acc, product) => {
+      if (product.id) {
+        acc[product.id] = product.image_path
+          ? getAssetUrl(product.image_path)
+          : null;
+      }
+      return acc;
+    }, {});
+  }, [products]);
 
   useEffect(() => {
     const checkMobile = () => {
@@ -193,50 +210,84 @@ export default function ProductsPage() {
           </CardDescription>
         </CardHeader>
         <CardContent>
-          <div className="overflow-x-auto">
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead>Nama Produk</TableHead>
-                  <TableHead>Kategori</TableHead>
-                  <TableHead>Harga Jual</TableHead>
-                  <TableHead>Stok</TableHead>
-                  <TableHead className="text-right">Aksi</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {products.map((product) => (
-                  <TableRow key={product.id}>
-                    <TableCell className="font-medium">
-                      {product.name}
-                    </TableCell>
-                    <TableCell>{product.name}</TableCell>
-                    <TableCell>
-                      {formatCurrency(product.selling_price)}
-                    </TableCell>
-                    <TableCell>{getProductStock(product.id || 0)}</TableCell>
-                    <TableCell className="text-right">
-                      <div className="flex justify-end gap-2">
-                        <Button variant="outline" size="sm" asChild>
+          <div className="flex flex-wrap gap-3">
+            {products.map((product) => {
+              const imageUrl = product.id ? productImageUrls[product.id] : null;
+
+              return (
+                <Card
+                  key={product.id}
+                  className="overflow-hidden w-full max-w-sm"
+                >
+                  <div className="flex sm:flex-row pl-5">
+                    <div className="relative w-full sm:w-42 h-42 flex-shrink-0 bg-secondary rounded-md overflow-hidden">
+                      {imageUrl ? (
+                        <Image
+                          src={imageUrl}
+                          alt={product.name}
+                          fill
+                          className="object-cover"
+                        />
+                      ) : (
+                        <div className="w-full h-full flex items-center justify-center text-muted-foreground">
+                          <ImageIcon className="h-12 w-12" />
+                        </div>
+                      )}
+                    </div>
+
+                    <div className="flex flex-col flex-grow">
+                      <CardHeader className="pb-2 pt-3">
+                        <CardTitle className="text-base line-clamp-2">
+                          {product.name}
+                        </CardTitle>
+                      </CardHeader>
+                      <CardContent className="space-y-2 pb-3 flex-grow">
+                        <div className="flex justify-between">
+                          <span className="text-muted-foreground text-sm">
+                            Harga
+                          </span>
+                          <span className="font-medium text-sm">
+                            {formatCurrency(product.selling_price)}
+                          </span>
+                        </div>
+                        <div className="flex justify-between">
+                          <span className="text-muted-foreground text-sm">
+                            Stok
+                          </span>
+                          <span className="font-medium text-sm">
+                            {getProductStock(product.id || 0)}
+                          </span>
+                        </div>
+                      </CardContent>
+                      <div className="p-3 pt-0 flex justify-end gap-2 mt-auto">
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          className="h-8 text-xs"
+                          asChild
+                        >
                           <Link href={`/p/detail?id=${product.id}`}>
-                            {!isMobile ? (
-                              "Detail"
-                            ) : (
-                              <ArrowLeft className="h-4 w-4" />
-                            )}
+                            <Eye className="h-3.5 w-3.5 mr-1" />
+                            Detail
                           </Link>
                         </Button>
-                        <Button variant="outline" size="sm" asChild>
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          className="h-8 text-xs"
+                          asChild
+                        >
                           <Link href={`/p/edit?id=${product.id}`}>
-                            {!isMobile ? "Edit" : <Boxes className="h-4 w-4" />}
+                            <Pencil className="h-3.5 w-3.5 mr-1" />
+                            Edit
                           </Link>
                         </Button>
                       </div>
-                    </TableCell>
-                  </TableRow>
-                ))}
-              </TableBody>
-            </Table>
+                    </div>
+                  </div>
+                </Card>
+              );
+            })}
           </div>
         </CardContent>
       </Card>
