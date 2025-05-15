@@ -1,8 +1,7 @@
 /**
- * Copyright (c) HashiCorp, Inc.
+ * Copyright (c) LichtLabs.
  * SPDX-License-Identifier: Apache-2.0
  */
-
 import { useEffect, useRef, useState } from "react";
 import { toast } from "sonner";
 

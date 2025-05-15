@@ -1,5 +1,5 @@
 /**
- * Copyright (c) HashiCorp, Inc.
+ * Copyright (c) LichtLabs.
  * SPDX-License-Identifier: Apache-2.0
  */
 
@@ -32,6 +32,11 @@ import {
 } from "@/components/ui/table";
 
 import { useDateFilter } from "../layout";
+
+/**
+ * Copyright (c) LichtLabs.
+ * SPDX-License-Identifier: Apache-2.0
+ */
 
 interface MovementWithItems extends InventoryMovement {
   items: Array<

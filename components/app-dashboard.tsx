@@ -1,5 +1,5 @@
 /**
- * Copyright (c) HashiCorp, Inc.
+ * Copyright (c) LichtLabs.
  * SPDX-License-Identifier: Apache-2.0
  */
 
@@ -40,6 +40,11 @@ import {
   SelectTrigger,
   SelectValue
 } from "@/components/ui/select";
+
+/**
+ * Copyright (c) LichtLabs.
+ * SPDX-License-Identifier: Apache-2.0
+ */
 
 const navigations = [
   {

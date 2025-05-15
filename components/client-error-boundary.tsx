@@ -1,5 +1,5 @@
 /**
- * Copyright (c) HashiCorp, Inc.
+ * Copyright (c) LichtLabs.
  * SPDX-License-Identifier: Apache-2.0
  */
 
@@ -10,7 +10,12 @@ import { Badge } from "@/components/ui/badge";
 import { Toaster } from "@/components/ui/sonner";
 
 /**
- * Copyright (c) HashiCorp, Inc.
+ * Copyright (c) LichtLabs.
+ * SPDX-License-Identifier: Apache-2.0
+ */
+
+/**
+ * Copyright (c) LichtLabs.
  * SPDX-License-Identifier: Apache-2.0
  */
 

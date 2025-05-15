@@ -1,8 +1,7 @@
 /**
- * Copyright (c) HashiCorp, Inc.
+ * Copyright (c) LichtLabs.
  * SPDX-License-Identifier: Apache-2.0
  */
-
 import { convertFileSrc } from "@tauri-apps/api/core";
 import { appDataDir } from "@tauri-apps/api/path";
 import { open } from "@tauri-apps/plugin-dialog";

@@ -1,4 +1,4 @@
-// Copyright (c) HashiCorp, Inc.
+// Copyright (c) LichtLabs.
 // SPDX-License-Identifier: Apache-2.0
 
 // Prevents additional console window on Windows in release, DO NOT REMOVE!!

@@ -1,5 +1,5 @@
 /**
- * Copyright (c) HashiCorp, Inc.
+ * Copyright (c) LichtLabs.
  * SPDX-License-Identifier: Apache-2.0
  */
 
@@ -27,6 +27,11 @@ import {
   CommandSeparator,
   CommandShortcut
 } from "@/components/ui/command";
+
+/**
+ * Copyright (c) LichtLabs.
+ * SPDX-License-Identifier: Apache-2.0
+ */
 
 interface CommandSearchProps {
   children?: React.ReactNode;

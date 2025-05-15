@@ -1,5 +1,5 @@
 /**
- * Copyright (c) HashiCorp, Inc.
+ * Copyright (c) LichtLabs.
  * SPDX-License-Identifier: Apache-2.0
  */
 
@@ -54,6 +54,11 @@ import {
   TableHeader,
   TableRow
 } from "@/components/ui/table";
+
+/**
+ * Copyright (c) LichtLabs.
+ * SPDX-License-Identifier: Apache-2.0
+ */
 
 export default function ProductDetailPage() {
   const router = useRouter();

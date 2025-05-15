@@ -1,5 +1,5 @@
 /**
- * Copyright (c) HashiCorp, Inc.
+ * Copyright (c) LichtLabs.
  * SPDX-License-Identifier: Apache-2.0
  */
 
@@ -27,6 +27,11 @@ import { formatCurrency } from "@/lib/utils";
 
 import { DatePicker } from "@/components/date-picker";
 import { StatsCard } from "@/components/stats-card";
+
+/**
+ * Copyright (c) LichtLabs.
+ * SPDX-License-Identifier: Apache-2.0
+ */
 
 interface ChartData {
   name: string;

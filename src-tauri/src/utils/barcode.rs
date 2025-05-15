@@ -1,4 +1,4 @@
-// Copyright (c) HashiCorp, Inc.
+// Copyright (c) LichtLabs.
 // SPDX-License-Identifier: Apache-2.0
 
 use anyhow::{Context, Result};
@@ -184,7 +184,7 @@ impl BarcodeManager {
         // --- Draw barcode centered horizontally below SKU text ---
         let barcode_y = text_height;
         let barcode_x = HORIZONTAL_PADDING as i64;
-        let mut barcode_canvas = barcode_img.to_rgb8();
+        let barcode_canvas = barcode_img.to_rgb8();
         image::imageops::overlay(&mut canvas, &barcode_canvas, barcode_x, barcode_y as i64);
 
         // --- Draw product info text below barcode, centered ---
@@ -330,50 +330,50 @@ impl BarcodeManager {
         Ok(())
     }
 
-    /// Draw text at a specific y offset, centered
-    fn draw_text_at(
-        canvas: &mut RgbImage,
-        font: &ab_glyph::FontRef,
-        text: &str,
-        y_offset: u32,
-    ) -> Result<()> {
-        use ab_glyph::PxScale;
-        let scale = PxScale {
-            x: DEFAULT_FONT_SIZE,
-            y: DEFAULT_FONT_SIZE,
-        };
-        let canvas_width = canvas.width() as f32;
-        let text_width: f32 = text
-            .chars()
-            .map(|c| {
-                if c.is_uppercase() || c == 'W' || c == 'M' {
-                    DEFAULT_FONT_SIZE * 0.75
-                } else if c.is_lowercase()
-                    && (c == 'i' || c == 'l' || c == 'j' || c == 't' || c == 'f')
-                {
-                    DEFAULT_FONT_SIZE * 0.4
-                } else if c == ' ' {
-                    DEFAULT_FONT_SIZE * 0.3
-                } else if c == '(' || c == ')' {
-                    DEFAULT_FONT_SIZE * 0.35
-                } else {
-                    DEFAULT_FONT_SIZE * 0.55
-                }
-            })
-            .sum();
-        let x_position = ((canvas_width - text_width) / 2.0).max(0.0) as i32;
-        let y_position = y_offset as i32;
-        imageproc::drawing::draw_text_mut(
-            canvas,
-            Rgb([0, 0, 0]),
-            x_position,
-            y_position,
-            scale,
-            font,
-            text,
-        );
-        Ok(())
-    }
+    // Draw text at a specific y offset, centered
+    // fn draw_text_at(
+    //     canvas: &mut RgbImage,
+    //     font: &ab_glyph::FontRef,
+    //     text: &str,
+    //     y_offset: u32,
+    // ) -> Result<()> {
+    //     use ab_glyph::PxScale;
+    //     let scale = PxScale {
+    //         x: DEFAULT_FONT_SIZE,
+    //         y: DEFAULT_FONT_SIZE,
+    //     };
+    //     let canvas_width = canvas.width() as f32;
+    //     let text_width: f32 = text
+    //         .chars()
+    //         .map(|c| {
+    //             if c.is_uppercase() || c == 'W' || c == 'M' {
+    //                 DEFAULT_FONT_SIZE * 0.75
+    //             } else if c.is_lowercase()
+    //                 && (c == 'i' || c == 'l' || c == 'j' || c == 't' || c == 'f')
+    //             {
+    //                 DEFAULT_FONT_SIZE * 0.4
+    //             } else if c == ' ' {
+    //                 DEFAULT_FONT_SIZE * 0.3
+    //             } else if c == '(' || c == ')' {
+    //                 DEFAULT_FONT_SIZE * 0.35
+    //             } else {
+    //                 DEFAULT_FONT_SIZE * 0.55
+    //             }
+    //         })
+    //         .sum();
+    //     let x_position = ((canvas_width - text_width) / 2.0).max(0.0) as i32;
+    //     let y_position = y_offset as i32;
+    //     imageproc::drawing::draw_text_mut(
+    //         canvas,
+    //         Rgb([0, 0, 0]),
+    //         x_position,
+    //         y_position,
+    //         scale,
+    //         font,
+    //         text,
+    //     );
+    //     Ok(())
+    // }
 }
 
 #[cfg(test)]

@@ -1,5 +1,5 @@
 /**
- * Copyright (c) HashiCorp, Inc.
+ * Copyright (c) LichtLabs.
  * SPDX-License-Identifier: Apache-2.0
  */
 
@@ -19,6 +19,11 @@ import {
   PopoverContent,
   PopoverTrigger
 } from "@/components/ui/popover";
+
+/**
+ * Copyright (c) LichtLabs.
+ * SPDX-License-Identifier: Apache-2.0
+ */
 
 interface DatePickerProps {
   onDateChange?: (dates: { startDate?: string; endDate?: string }) => void;

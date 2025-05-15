@@ -1,5 +1,5 @@
 /**
- * Copyright (c) HashiCorp, Inc.
+ * Copyright (c) LichtLabs.
  * SPDX-License-Identifier: Apache-2.0
  */
 
@@ -34,6 +34,11 @@ import {
   CardHeader,
   CardTitle
 } from "@/components/ui/card";
+
+/**
+ * Copyright (c) LichtLabs.
+ * SPDX-License-Identifier: Apache-2.0
+ */
 
 export default function ProductsPage() {
   const [products, setProducts] = useState<Product[]>([]);
