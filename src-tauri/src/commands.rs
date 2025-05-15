@@ -1,4 +1,4 @@
-// Copyright (c) HashiCorp, Inc.
+// Copyright (c) LichtLabs.
 // SPDX-License-Identifier: Apache-2.0
 
 use crate::utils::barcode::{Barcode, BarcodeManager};
@@ -67,6 +67,7 @@ pub async fn generate_barcode(
         &app_handle,
         &sanitized_product_name,
         &sanitized_variant_name,
+        true,
     )
     .await
     .map_err(|e| e.to_string())?;
@@ -99,7 +100,7 @@ pub async fn generate_barcode(
     // Save the barcode PNG in a blocking task
     let save_path_str = save_path.to_str().unwrap_or_default().to_string();
     tokio::task::spawn_blocking(move || {
-        if let Err(e) = bm.save_as_png(&save_path_str) {
+        if let Err(e) = bm.save_as_png_with_sku(&save_path_str, &variant_name_for_barcode) {
             log::error!("Failed to save barcode PNG: {e}");
             // We don't return the error because the task is already spawned
             // and the main function has already prepared the response
@@ -120,6 +121,7 @@ async fn prepare_barcode_path(
     app_handle: &AppHandle,
     name: &str,
     handle: &str,
+    raw: bool,
 ) -> anyhow::Result<PathBuf> {
     let base_dir = app_handle
         .path()
@@ -128,7 +130,7 @@ async fn prepare_barcode_path(
         .join("org.lichtlabs.inventorymgmt")
         .join("barcodes");
 
-    // Create path structure: /name/handle/barcode.png
+    // Create path structure: /name/handle/barcode-raw.png | /name/handle/barcode.png
     let save_dir = base_dir.join(name).join(handle);
 
     // Create directories if they don't exist
@@ -139,7 +141,11 @@ async fn prepare_barcode_path(
         log::debug!("Created barcode directory: {save_dir:?}");
     }
 
-    let save_path = save_dir.join("barcode.png");
+    let save_path = if raw {
+        save_dir.join("barcode-raw.png")
+    } else {
+        save_dir.join("barcode.png")
+    };
     log::debug!("Barcode save path: {save_path:?}");
 
     Ok(save_path)

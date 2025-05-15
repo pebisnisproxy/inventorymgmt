@@ -1,4 +1,4 @@
-// Copyright (c) HashiCorp, Inc.
+// Copyright (c) LichtLabs.
 // SPDX-License-Identifier: Apache-2.0
 
 mod commands;
@@ -71,7 +71,7 @@ pub fn run() {
 
             Ok(())
         })
-        .invoke_handler(tauri::generate_handler![commands::generate_barcode])
+        .invoke_handler(tauri::generate_handler![commands::generate_barcode,])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");
 }

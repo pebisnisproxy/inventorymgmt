@@ -60,6 +60,16 @@ import {
  * SPDX-License-Identifier: Apache-2.0
  */
 
+/**
+ * Copyright (c) LichtLabs.
+ * SPDX-License-Identifier: Apache-2.0
+ */
+
+/**
+ * Copyright (c) LichtLabs.
+ * SPDX-License-Identifier: Apache-2.0
+ */
+
 export default function ProductDetailPage() {
   const router = useRouter();
   const searchParams = useSearchParams();
@@ -185,6 +195,7 @@ export default function ProductDetailPage() {
       })
     )
   });
+
   type VariantFormValues = z.infer<typeof variantFormSchema>;
 
   const variantForm = useForm<VariantFormValues>({

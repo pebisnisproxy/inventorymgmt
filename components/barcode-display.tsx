@@ -46,7 +46,21 @@ export default function BarcodeDisplay({
   // Function to open the barcode file in the system's file explorer
   const handleOpenInExplorer = async () => {
     try {
+      // if already exists, don't save again
+      // const isExists = await exists(barcodePath.replace("-raw", ""), {
+      //   baseDir: BaseDirectory.AppData
+      // });
+      // toast.info(`isExists: ${isExists}`);
+      // if (isExists) {
       await revealItemInDir(barcodePath);
+      // } else {
+      //   await invoke("save_barcode_with_sku", {
+      //     productName,
+      //     variantName: productHandle,
+      //     sku: productHandle
+      //   });
+      //   await revealItemInDir(barcodePath);
+      // }
     } catch (error) {
       console.error("Error revealing barcode in file explorer:", error);
       toast.error("Failed to open file location");
@@ -54,16 +68,15 @@ export default function BarcodeDisplay({
   };
 
   return (
-    <div className="flex flex-col items-center p-4 bg-white rounded-lg shadow">
-      <h2 className="text-lg font-semibold mb-2">{productName}</h2>
-      <p className="text-sm text-gray-600 mb-4">SKU: {productHandle}</p>
+    <div className="flex flex-col items-center p-4 rounded-lg shadow bg-white">
+      <h2 className="text-lg font-semibold mb-2 text-black">{productName}</h2>
       <BarcodeImage
         path={imagePathForTauri}
         productName={productName}
         productHandle={productHandle}
         width={280}
         height={120}
-        className="mb-2"
+        className="mb-2 py-2"
       />
       <div className="flex items-center justify-between w-full mt-2">
         <p className="text-xs text-gray-500">
