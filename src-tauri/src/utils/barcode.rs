@@ -7,6 +7,7 @@ use barcoders::generators::json::*;
 use barcoders::generators::svg::*;
 use barcoders::sym::code39::Code39;
 use image::{ImageBuffer, Rgb, RgbImage};
+use imageproc::drawing::text_size;
 use log::{debug, info};
 use serde::{Deserialize, Serialize};
 use tokio::fs::File;
@@ -131,6 +132,86 @@ impl BarcodeManager {
         Ok(())
     }
 
+    /// Save the barcode as a PNG file with SKU on top, barcode in the middle, and product info below
+    pub fn save_as_png_with_sku(&self, path: &str, sku: &str) -> Result<()> {
+        info!("Saving barcode as PNG with SKU to: {}", path);
+
+        // Generate barcode image
+        let barcode_img = self
+            .generate_barcode_image()
+            .context("Failed to generate barcode image")?;
+
+        // Load font
+        let font = self.load_font().context("Failed to load font")?;
+        use ab_glyph::{Font, PxScale};
+        let scale = PxScale {
+            x: DEFAULT_FONT_SIZE,
+            y: DEFAULT_FONT_SIZE,
+        };
+
+        // Prepare text
+        let sku_text = format!("SKU: {}", sku);
+        let product_text = format!("{} ({})", self.product_name, self.product_handle);
+
+        // Calculate text heights
+        let text_height = DEFAULT_FONT_SIZE as u32 + (DEFAULT_PADDING * 2);
+        let (barcode_width, barcode_height) = (barcode_img.width(), barcode_img.height());
+        let total_height = text_height + barcode_height + text_height + TEXT_PADDING;
+
+        // Create image with white background
+        let mut canvas: RgbImage = ImageBuffer::new(barcode_width, total_height);
+        for pixel in canvas.pixels_mut() {
+            *pixel = Rgb([255, 255, 255]);
+        }
+
+        // --- Draw SKU text at the top, centered ---
+        let (sku_text_width, sku_text_height) = text_size(scale, &font, &sku_text);
+        let sku_x = ((barcode_width as i32 - sku_text_width as i32) / 2).max(0);
+        let sku_y = DEFAULT_PADDING as i32;
+        imageproc::drawing::draw_text_mut(
+            &mut canvas,
+            Rgb([0, 0, 0]),
+            sku_x,
+            sku_y,
+            scale,
+            &font,
+            &sku_text,
+        );
+
+        // --- Draw barcode centered horizontally below SKU text ---
+        let barcode_y = text_height;
+        let barcode_x = ((barcode_width as i32 - barcode_img.width() as i32) / 2).max(0);
+        let mut barcode_canvas = barcode_img.to_rgb8();
+        image::imageops::overlay(
+            &mut canvas,
+            &barcode_canvas,
+            barcode_x as i64,
+            barcode_y as i64,
+        );
+
+        // --- Draw product info text below barcode, centered ---
+        let (product_text_width, _product_text_height) = text_size(scale, &font, &product_text);
+        let product_x = ((barcode_width as i32 - product_text_width as i32) / 2).max(0);
+        let product_y = (barcode_y + barcode_height + TEXT_PADDING) as i32;
+        imageproc::drawing::draw_text_mut(
+            &mut canvas,
+            Rgb([0, 0, 0]),
+            product_x,
+            product_y,
+            scale,
+            &font,
+            &product_text,
+        );
+
+        // Save the final image
+        canvas
+            .save(path)
+            .context("Failed to save PNG image to file")?;
+
+        info!("Successfully saved barcode as PNG with SKU");
+        Ok(())
+    }
+
     /// Generate the barcode image from encoded data
     fn generate_barcode_image(&self) -> Result<image::DynamicImage> {
         debug!("Generating barcode image");
@@ -250,6 +331,51 @@ impl BarcodeManager {
 
         Ok(())
     }
+
+    /// Draw text at a specific y offset, centered
+    fn draw_text_at(
+        canvas: &mut RgbImage,
+        font: &ab_glyph::FontRef,
+        text: &str,
+        y_offset: u32,
+    ) -> Result<()> {
+        use ab_glyph::PxScale;
+        let scale = PxScale {
+            x: DEFAULT_FONT_SIZE,
+            y: DEFAULT_FONT_SIZE,
+        };
+        let canvas_width = canvas.width() as f32;
+        let text_width: f32 = text
+            .chars()
+            .map(|c| {
+                if c.is_uppercase() || c == 'W' || c == 'M' {
+                    DEFAULT_FONT_SIZE * 0.75
+                } else if c.is_lowercase()
+                    && (c == 'i' || c == 'l' || c == 'j' || c == 't' || c == 'f')
+                {
+                    DEFAULT_FONT_SIZE * 0.4
+                } else if c == ' ' {
+                    DEFAULT_FONT_SIZE * 0.3
+                } else if c == '(' || c == ')' {
+                    DEFAULT_FONT_SIZE * 0.35
+                } else {
+                    DEFAULT_FONT_SIZE * 0.55
+                }
+            })
+            .sum();
+        let x_position = ((canvas_width - text_width) / 2.0).max(0.0) as i32;
+        let y_position = y_offset as i32;
+        imageproc::drawing::draw_text_mut(
+            canvas,
+            Rgb([0, 0, 0]),
+            x_position,
+            y_position,
+            scale,
+            font,
+            text,
+        );
+        Ok(())
+    }
 }
 
 #[cfg(test)]
@@ -277,5 +403,17 @@ mod tests {
     fn test_barcode_to_json() {
         let bm = BarcodeManager::new("PRODUCTONE", "XS").unwrap();
         assert!(bm.to_json().is_ok());
+    }
+
+    #[tokio::test]
+    async fn test_barcode_save_as_png_with_sku() {
+        let bm = BarcodeManager::new("PRODUCTONE", "XS").unwrap();
+        let result = tokio::task::spawn_blocking(move || {
+            bm.save_as_png_with_sku("test_with_sku.png", "SKU12345")
+                .unwrap();
+        })
+        .await
+        .is_ok();
+        assert!(result);
     }
 }
