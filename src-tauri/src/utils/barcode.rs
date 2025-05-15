@@ -23,6 +23,8 @@ const DEFAULT_PADDING: u32 = 4;
 const DEFAULT_FONT_SIZE: f32 = 22.0;
 /// Text padding below barcode
 const TEXT_PADDING: u32 = 10;
+/// Horizontal padding in pixels
+const HORIZONTAL_PADDING: u32 = 32;
 
 #[derive(Debug, Serialize, Deserialize)]
 pub struct Barcode {
@@ -143,7 +145,7 @@ impl BarcodeManager {
 
         // Load font
         let font = self.load_font().context("Failed to load font")?;
-        use ab_glyph::{Font, PxScale};
+        use ab_glyph::PxScale;
         let scale = PxScale {
             x: DEFAULT_FONT_SIZE,
             y: DEFAULT_FONT_SIZE,
@@ -156,17 +158,18 @@ impl BarcodeManager {
         // Calculate text heights
         let text_height = DEFAULT_FONT_SIZE as u32 + (DEFAULT_PADDING * 2);
         let (barcode_width, barcode_height) = (barcode_img.width(), barcode_img.height());
+        let total_width = barcode_width + HORIZONTAL_PADDING * 2;
         let total_height = text_height + barcode_height + text_height + TEXT_PADDING;
 
         // Create image with white background
-        let mut canvas: RgbImage = ImageBuffer::new(barcode_width, total_height);
+        let mut canvas: RgbImage = ImageBuffer::new(total_width, total_height);
         for pixel in canvas.pixels_mut() {
             *pixel = Rgb([255, 255, 255]);
         }
 
         // --- Draw SKU text at the top, centered ---
-        let (sku_text_width, sku_text_height) = text_size(scale, &font, &sku_text);
-        let sku_x = ((barcode_width as i32 - sku_text_width as i32) / 2).max(0);
+        let (sku_text_width, _sku_text_height) = text_size(scale, &font, &sku_text);
+        let sku_x = ((total_width as i32 - sku_text_width as i32) / 2).max(0);
         let sku_y = DEFAULT_PADDING as i32;
         imageproc::drawing::draw_text_mut(
             &mut canvas,
@@ -180,18 +183,13 @@ impl BarcodeManager {
 
         // --- Draw barcode centered horizontally below SKU text ---
         let barcode_y = text_height;
-        let barcode_x = ((barcode_width as i32 - barcode_img.width() as i32) / 2).max(0);
+        let barcode_x = HORIZONTAL_PADDING as i64;
         let mut barcode_canvas = barcode_img.to_rgb8();
-        image::imageops::overlay(
-            &mut canvas,
-            &barcode_canvas,
-            barcode_x as i64,
-            barcode_y as i64,
-        );
+        image::imageops::overlay(&mut canvas, &barcode_canvas, barcode_x, barcode_y as i64);
 
         // --- Draw product info text below barcode, centered ---
         let (product_text_width, _product_text_height) = text_size(scale, &font, &product_text);
-        let product_x = ((barcode_width as i32 - product_text_width as i32) / 2).max(0);
+        let product_x = ((total_width as i32 - product_text_width as i32) / 2).max(0);
         let product_y = (barcode_y + barcode_height + TEXT_PADDING) as i32;
         imageproc::drawing::draw_text_mut(
             &mut canvas,
